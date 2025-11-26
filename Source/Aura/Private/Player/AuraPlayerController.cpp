@@ -37,7 +37,7 @@ void AAuraPlayerController::BeginPlay()
 
 		FInputModeGameAndUI InputModeData;
 		// 鼠标不锁定到视口区域, 玩家可以将鼠标移出游戏窗口到桌面或其他应用程序
-		InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);\
+		InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		// 鼠标捕获期间不隐藏光标, false 表示即使在游戏捕获鼠标输入时，鼠标光标仍然保持可见
 		InputModeData.SetHideCursorDuringCapture(false);
 		SetInputMode(InputModeData);
