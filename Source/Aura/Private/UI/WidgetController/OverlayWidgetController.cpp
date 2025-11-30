@@ -3,7 +3,10 @@
 
 #include "UI/WidgetController/OverlayWidgetController.h"
 
+#include "AbilitySystem/AuraAbilitySystemComponent.h"
 #include "AbilitySystem/AuraAttributeSet.h"
+
+class UAuraAbilitySystemComponent;
 
 void UOverlayWidgetController::BroadcastInitialValues()
 {
@@ -26,6 +29,20 @@ void UOverlayWidgetController::BindCallbacksToDependencies()
 		.AddUObject(this, &UOverlayWidgetController::ManaChanged);
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AuraAttributeSet->GetMaxManaAttribute())
 		.AddUObject(this, &UOverlayWidgetController::MaxManaChanged);
+
+	UAuraAbilitySystemComponent* AuraASC = CastChecked<UAuraAbilitySystemComponent>(AbilitySystemComponent);
+	AuraASC->EffectAssetTags.AddLambda([this](const FGameplayTagContainer& AssetTags)
+	{
+		const FGameplayTag MessageTag = FGameplayTag::RequestGameplayTag(FName("Message"));
+		for (const FGameplayTag& Tag : AssetTags)
+		{
+			if (Tag.MatchesTag(MessageTag))
+			{
+				const FUIWidgetRow* Row = GetDataTableRowByTag<FUIWidgetRow>(MessageWidgetDataTable, Tag);
+				MessageWidgetRowDelegate.Broadcast(*Row);
+			}
+		}
+	});
 }
 
 void UOverlayWidgetController::HealthChanged(const FOnAttributeChangeData& Data) const

@@ -28,6 +28,7 @@ void UAuraAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 // 此处的clamping并没有永久地修改ASC的modifier，它仅改变了查询modifier返回的值。
 // 这意味着任何修改器GameplayEffectExecutionCalculations和ModifierMagnitudeCalculations对CurrentValue的重计算都要重新clamping。
+// 即只改变currentValue, 但每次effect应用时计算都以baseValue为基础
 void UAuraAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
 	Super::PreAttributeChange(Attribute, NewValue);
@@ -87,6 +88,7 @@ void UAuraAttributeSet::SetEffectProperties(const FGameplayEffectModCallbackData
 
 }
 
+// 为什么不在之前set，因为该函数调用时，effect应用完成，但属性值还没有复制到客户端，此时再修改可以避免二次复制
 void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
 	Super::PostGameplayEffectExecute(Data);
@@ -96,8 +98,11 @@ void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 	{
 		// UE_LOG(LogTemp, Warning, TEXT("---Health: %f"), GetHealth());
 		// UE_LOG(LogTemp, Warning, TEXT("---Magnitude: %f"), Data.EvaluatedData.Magnitude);
-
-
+		SetHealth(FMath::Clamp(GetHealth(), 0.f, GetMaxHealth()));
+	}
+	if (Data.EvaluatedData.Attribute == GetManaAttribute())
+	{
+		SetMana(FMath::Clamp(GetMana(), 0.f, GetMaxMana()));
 	}
 }
 
