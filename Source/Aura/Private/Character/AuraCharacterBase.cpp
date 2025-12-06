@@ -3,6 +3,7 @@
 
 #include "Character/AuraCharacterBase.h"
 
+#include "AbilitySystemComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 
 // Sets default values
@@ -28,5 +29,30 @@ void AAuraCharacterBase::BeginPlay()
 
 void AAuraCharacterBase::InitAbilityActorInfo()
 {
+}
+
+void AAuraCharacterBase::ApplyEffectToSelf(const TSubclassOf<UGameplayEffect>& GameplayEffectClass, const float Level) const
+{
+	check(GetAbilitySystemComponent());
+	check(GameplayEffectClass);
+	FGameplayEffectContextHandle EffectContextHandle = GetAbilitySystemComponent()->MakeEffectContext();
+	EffectContextHandle.AddSourceObject(this);
+	const FGameplayEffectSpecHandle EffectSpecHandle = GetAbilitySystemComponent()->MakeOutgoingSpec(GameplayEffectClass, Level, EffectContextHandle);
+	GetAbilitySystemComponent()->ApplyGameplayEffectSpecToTarget(*EffectSpecHandle.Data.Get(), GetAbilitySystemComponent());
+}
+
+void AAuraCharacterBase::InitializePrimaryAttributes() const
+{
+	ApplyEffectToSelf(DefaultPrimaryAttributes, 1.f);
+}
+
+void AAuraCharacterBase::InitializeSecondaryAttributes() const
+{
+	ApplyEffectToSelf(DefaultSecondaryAttributes, 1.f);
+}
+
+void AAuraCharacterBase::InitializeVitalAttributes() const
+{
+	ApplyEffectToSelf(DefaultVitalAttributes, 1.f);
 }
 

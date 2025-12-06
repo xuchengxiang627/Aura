@@ -53,6 +53,14 @@ void AAuraCharacter::OnRep_PlayerState()
 	InitAbilityActorInfo();
 }
 
+int32 AAuraCharacter::GetPlayerLevel()
+{
+	const AAuraPlayerState* PS = GetPlayerState<AAuraPlayerState>();
+	check(PS);
+	return PS->GetPlayerLevel();
+
+}
+
 void AAuraCharacter::InitAbilityActorInfo()
 {
 	if (AAuraPlayerState* PS = GetPlayerState<AAuraPlayerState>())
@@ -71,5 +79,9 @@ void AAuraCharacter::InitAbilityActorInfo()
 				AuraHUD->InitOverlay(PC, PS, AbilitySystemComponent, AttributeSet);
 			}
 		}
+		// 初始化重要属性
+		InitializePrimaryAttributes();
+		InitializeSecondaryAttributes();
+		InitializeVitalAttributes();
 	}
 }

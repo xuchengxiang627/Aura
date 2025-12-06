@@ -32,6 +32,6 @@ private:
 
 	void Move(const FInputActionValue& InputActionValue);
 	void CursorTrace(); // 检测鼠标追踪
-	TObjectPtr<IEnemyInterface> LastActor;
-	TObjectPtr<IEnemyInterface> ThisActor;
+	IEnemyInterface* LastActor;
+	IEnemyInterface* ThisActor;
 };

@@ -76,7 +76,7 @@ void AAuraPlayerController::CursorTrace()
 	}
 
 	LastActor = ThisActor;
-	ThisActor = Cast<IEnemyInterface>(HitResult.GetActor());\
+	ThisActor = Cast<IEnemyInterface>(HitResult.GetActor());
 	if (LastActor == nullptr)
 	{
 		if (ThisActor == nullptr) return;
