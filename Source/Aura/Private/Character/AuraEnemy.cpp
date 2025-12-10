@@ -48,6 +48,8 @@ void AAuraEnemy::BeginPlay()
 
 void AAuraEnemy::InitAbilityActorInfo()
 {
+	// 添加属性集
+	AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet.Get());
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	Cast<UAuraAbilitySystemComponent>(AbilitySystemComponent)->AbilityActorInfoSet();
 }

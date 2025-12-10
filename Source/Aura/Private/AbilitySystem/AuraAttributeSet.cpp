@@ -5,6 +5,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "AuraGameplayTags.h"
 #include "GameplayEffectExtension.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
@@ -15,6 +16,36 @@ UAuraAttributeSet::UAuraAttributeSet()
 	// InitMana(25.f);
 	// InitMaxHealth(100.f);
 	// InitMaxMana(50.f);
+	const FAuraGameplayTags& Tags = FAuraGameplayTags::Get();
+
+	// FAttributeSignature StrengthDelegate;
+	// StrengthDelegate.BindStatic(GetStrengthAttribute);
+	// TagsToAttributes.Add(Tags.Attributes_Primary_Strength, StrengthDelegate);
+	//
+	// FAttributeSignature IntelligenceDelegate;
+	// IntelligenceDelegate.BindStatic(GetIntelligenceAttribute);
+	// TagsToAttributes.Add(Tags.Attributes_Primary_Intelligence, IntelligenceDelegate);
+
+	/** Primary Attributes*/
+	TagsToAttributes.Add(Tags.Attributes_Primary_Strength, GetStrengthAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Primary_Intelligence, GetIntelligenceAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Primary_Resilience, GetResilienceAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Primary_Vigor, GetVigorAttribute);
+
+	/** Secondary Attributes*/
+	TagsToAttributes.Add(Tags.Attributes_Secondary_Armor, GetArmorAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Secondary_ArmorPenetration, GetArmorPenetrationAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Secondary_BlockChance, GetBlockChanceAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Secondary_CriticalHitChance, GetCriticalHitChanceAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Secondary_CriticalHitDamage, GetCriticalHitDamageAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Secondary_CriticalHitResistance, GetCriticalHitResistanceAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Secondary_HealthRegeneration, GetHealthRegenerationAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Secondary_ManaRegeneration, GetManaRegenerationAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Secondary_MaxHealth, GetMaxHealthAttribute);
+	TagsToAttributes.Add(Tags.Attributes_Secondary_MaxMana, GetMaxManaAttribute);
+
+
+
 }
 
 void UAuraAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -49,9 +80,9 @@ void UAuraAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 
 	if  (Attribute == GetHealthAttribute())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("before Health: %f"), NewValue);
+		// UE_LOG(LogTemp, Warning, TEXT("before Health: %f"), NewValue);
 		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxHealth());
-		UE_LOG(LogTemp, Warning, TEXT("after Health: %f"), NewValue);
+		// UE_LOG(LogTemp, Warning, TEXT("after Health: %f"), NewValue);
 	} else if (Attribute == GetManaAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
@@ -110,6 +141,7 @@ void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 	SetEffectProperties(Data, EffectProperties);
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
+		// UE_LOG(LogTemp, Warning, TEXT("---Set: %p"), this)
 		// UE_LOG(LogTemp, Warning, TEXT("---Health: %f"), GetHealth());
 		// UE_LOG(LogTemp, Warning, TEXT("---Magnitude: %f"), Data.EvaluatedData.Magnitude);
 		SetHealth(FMath::Clamp(GetHealth(), 0.f, GetMaxHealth()));
@@ -118,6 +150,7 @@ void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 	{
 		SetMana(FMath::Clamp(GetMana(), 0.f, GetMaxMana()));
 	}
+	UE_LOG(LogTemp, Warning, TEXT("%s: %f"), *Data.EvaluatedData.Attribute.GetName(), Data.EvaluatedData.Attribute.GetNumericValue(this));
 }
 
 void UAuraAttributeSet::OnRep_Strength(const FGameplayAttributeData& OldStrength) const

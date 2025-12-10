@@ -17,6 +17,10 @@ AAuraPlayerState::AAuraPlayerState()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	AttributeSet = CreateDefaultSubobject<UAuraAttributeSet>(TEXT("AttributeSet"));
+
+	// 添加属性集
+	AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet.Get());
+	// UE_LOG(LogTemp, Warning, TEXT("---PlayStateSet: %p"), AttributeSet.Get())
 }
 
 void AAuraPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

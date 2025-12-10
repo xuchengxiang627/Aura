@@ -12,6 +12,12 @@
 	GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
+
+DECLARE_DELEGATE_RetVal(FGameplayAttribute, FAttributeSignature);
+
+template<class T>
+using TStaticFuncPtr = typename TBaseStaticDelegateInstance<T, FDefaultDelegateUserPolicy>::FFuncPtr;
+
 /**
  * 
  */
@@ -38,8 +44,6 @@ struct FEffectProperties
 	ACharacter* TargetCharacter = nullptr;
 
 	FEffectProperties(){}
-
-	
 };
 
 UCLASS()
@@ -52,6 +56,10 @@ public:
 	// 在这里对属性进行clamp
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+
+	// TMap<FGameplayTag, FAttributeSignature> TagsToAttributes;
+
+	TMap<FGameplayTag, TStaticFuncPtr<FGameplayAttribute()>> TagsToAttributes;
 
 	/** Primary Attributes */
 	UPROPERTY(ReplicatedUsing=OnRep_Strength, BlueprintReadOnly, Category = "Primary Attributes")
