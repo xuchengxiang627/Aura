@@ -3,23 +3,51 @@
 
 #include "Player/AuraPlayerController.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AuraGameplayTags.h"
 #include "Engine/LocalPlayer.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "GameplayTagContainer.h"
 #include "Components/InputComponent.h"
 #include "InputAction.h"
+#include "NavigationPath.h"
+#include "NavigationSystem.h"
+#include "AbilitySystem/AuraAbilitySystemComponent.h"
+#include "Components/SplineComponent.h"
 #include "GameFramework/Pawn.h"
+#include "Input/AuraInputComponent.h"
 #include "Interaction/EnemyInterface.h"
 
 AAuraPlayerController::AAuraPlayerController()
 {
 	bReplicates = true;
+	Spline = CreateDefaultSubobject<USplineComponent>(TEXT("Spline"));
+
 }
 
 void AAuraPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 	CursorTrace();
+	AutoRun();
+}
+
+void AAuraPlayerController::AutoRun()
+{
+	if (!bAutoRunning) return;
+	if (APawn* ControlledPawn = GetPawn())
+ 	{
+ 		const FVector LocationOnSpline = Spline->FindLocationClosestToWorldLocation(ControlledPawn->GetActorLocation(), ESplineCoordinateSpace::World);
+ 		const FVector Direction = Spline->FindDirectionClosestToWorldLocation(LocationOnSpline, ESplineCoordinateSpace::World);
+ 		ControlledPawn->AddMovementInput(Direction);
+
+ 		const float DistanceToDestination = (LocationOnSpline - CachedDestination).Length();
+ 		if (DistanceToDestination <= AutoRunAcceptanceRadius)
+ 		{
+ 			bAutoRunning = false;
+ 		}
+ 	}
 }
 
 void AAuraPlayerController::BeginPlay()
@@ -47,8 +75,16 @@ void AAuraPlayerController::BeginPlay()
 void AAuraPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
-	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAuraPlayerController::Move);
+	// UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
+	// EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAuraPlayerController::Move);
+	UAuraInputComponent* AuraInputComponent = CastChecked<UAuraInputComponent>(InputComponent);
+	AuraInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAuraPlayerController::Move);
+	AuraInputComponent->BindAction(ShiftAction, ETriggerEvent::Started, this, &AAuraPlayerController::ShiftPressed);
+	AuraInputComponent->BindAction(ShiftAction, ETriggerEvent::Completed, this, &AAuraPlayerController::ShiftReleased);
+	AuraInputComponent->BindAbilityActions(InputConfig, this,
+		&AAuraPlayerController::AbilityInputTagPressed,
+		&AAuraPlayerController::AbilityInputTagReleased,
+		&AAuraPlayerController::AbilityInputHeld);
 }
 
 void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
@@ -68,7 +104,6 @@ void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 
 void AAuraPlayerController::CursorTrace()
 {
-	FHitResult HitResult;
 	GetHitResultUnderCursor(ECC_Visibility, false, HitResult);
 	if (!HitResult.bBlockingHit)
 	{
@@ -96,4 +131,94 @@ void AAuraPlayerController::CursorTrace()
 		ThisActor->HighlightActor();
 	}
 	// 命中的对象和上一次命中的对象相同，则保持高亮, 不操作
+}
+
+void AAuraPlayerController::AbilityInputTagPressed(FGameplayTag InputTag)
+{
+	if (InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB))
+	{
+		// 当命中的对象存在时，即有高亮敌人时，标记有目标
+		bTargeting = ThisActor ? true : false;
+		// 此时还不知道是否自动移动
+		bAutoRunning = false;
+	}
+
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, *InputTag.ToString());
+}
+
+void AAuraPlayerController::AbilityInputTagReleased(FGameplayTag InputTag)
+{
+	if (!InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB))
+	{
+		if (GetAuraAbilitySystemComponent() == nullptr) return;
+		GetAuraAbilitySystemComponent()->AbilityInputTagReleased(InputTag);
+		return;
+	}
+	if (GetAuraAbilitySystemComponent())
+	{
+		GetAuraAbilitySystemComponent()->AbilityInputTagReleased(InputTag);
+	}
+	if (!bTargeting && !bShiftKeyDown) // 当没有目标时，按下左键且未按住Shift时，角色自动移动
+	{
+		// 鼠标点击时间小于阈值，则自动移动
+		if (APawn* ControlledPawn = GetPawn(); FollowTime <= ShortPressThreshold && ControlledPawn)
+		{
+			if (UNavigationPath* NavPath = UNavigationSystemV1::FindPathToLocationSynchronously(this,
+				ControlledPawn->GetActorLocation(), CachedDestination))
+			{
+				Spline->ClearSplinePoints();
+				for (const FVector& Point : NavPath->PathPoints)
+				{
+					Spline->AddSplinePoint(Point, ESplineCoordinateSpace::World);
+					// DrawDebugSphere(GetWorld(), Point, 8.f, 12.f, FColor::Blue, false, 5.f);
+				}
+				CachedDestination = NavPath->PathPoints.Last();
+				bAutoRunning = true; // 此时有了样条点可以自动移动
+			}
+		}
+		FollowTime = 0.f;
+	}
+	bTargeting = false;
+}
+
+void AAuraPlayerController::AbilityInputHeld(FGameplayTag InputTag)
+{
+	// 输入标签不是左键
+	if (!InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB))
+	{
+		if (GetAuraAbilitySystemComponent() == nullptr) return;
+		GetAuraAbilitySystemComponent()->AbilityInputTagHeld(InputTag);
+		return;
+	}
+	// 输入标签是左键，但需要目标才激活能力
+	if (bTargeting || bShiftKeyDown)
+	{
+		if (GetAuraAbilitySystemComponent())
+		{
+			GetAuraAbilitySystemComponent()->AbilityInputTagHeld(InputTag);
+		}
+	}
+	else // 当没有敌方目标时，按下左键，角色向点击的位置移动
+	{
+		FollowTime += GetWorld()->GetDeltaSeconds();
+		// 持续按压鼠标时，角色移动，此外，希望点击鼠标时也可以实现这个效果（可见AbilityInputTagReleased）
+		if (HitResult.bBlockingHit)
+		{
+			CachedDestination = HitResult.ImpactPoint; // 缓存目标点
+			if (APawn* ControlledPawn = GetPawn())
+			{
+				const FVector WorldDirection = (CachedDestination - ControlledPawn->GetActorLocation()).GetSafeNormal();
+				ControlledPawn->AddMovementInput(WorldDirection); // 向缓存目标方向移动
+			}
+		}
+	}
+}
+
+UAuraAbilitySystemComponent* AAuraPlayerController::GetAuraAbilitySystemComponent()
+{
+	if (AuraAbilitySystemComponent ==  nullptr)
+	{
+		AuraAbilitySystemComponent = Cast<UAuraAbilitySystemComponent>(UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetPawn()));
+	}
+	return AuraAbilitySystemComponent;
 }
