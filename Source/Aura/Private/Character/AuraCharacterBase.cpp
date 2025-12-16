@@ -70,6 +70,13 @@ void AAuraCharacterBase::InitializeVitalAttributes() const
 	ApplyEffectToSelf(DefaultVitalAttributes, 1.f);
 }
 
+void AAuraCharacterBase::InitializeDefaultAttributes() const
+{
+	InitializePrimaryAttributes();
+	InitializeSecondaryAttributes();
+	InitializeVitalAttributes();
+}
+
 void AAuraCharacterBase::AddCharacterAbilities()
 {
 	// 仅在服务器执行

@@ -57,6 +57,8 @@ protected:
 	/** 初始化 初始生命值和法力值 */
 	void InitializeVitalAttributes() const;
 
+	virtual void InitializeDefaultAttributes() const;
+
 	void AddCharacterAbilities();
 private:
 	UPROPERTY(EditAnywhere, Category="Abilities")
