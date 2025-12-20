@@ -8,7 +8,9 @@
 #include "AuraGameplayTags.h"
 #include "GameplayEffectExtension.h"
 #include "GameFramework/Character.h"
+#include "Interaction/CombatInterface.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/AuraPlayerController.h"
 
 UAuraAttributeSet::UAuraAttributeSet()
 {
@@ -133,6 +135,14 @@ void UAuraAttributeSet::SetEffectProperties(const FGameplayEffectModCallbackData
 
 }
 
+void UAuraAttributeSet::ShowFloatingText(const FEffectProperties& EffectProperties, const float LocalIncomingDamage)
+{
+	if (AAuraPlayerController* PC = Cast<AAuraPlayerController>(EffectProperties.SourceController))
+	{
+		PC->ShowDamageNumber(LocalIncomingDamage, EffectProperties.TargetCharacter);
+	}
+}
+
 // 为什么不在之前set，因为该函数调用时，effect应用完成，但属性值还没有复制到客户端，此时再修改可以避免二次复制
 void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
@@ -149,6 +159,33 @@ void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 	if (Data.EvaluatedData.Attribute == GetManaAttribute())
 	{
 		SetMana(FMath::Clamp(GetMana(), 0.f, GetMaxMana()));
+	}
+	if (Data.EvaluatedData.Attribute == GetIncomingDamageAttribute())
+	{
+		const float LocalIncomingDamage = GetIncomingDamage();
+		SetIncomingDamage(0.f);
+		if (LocalIncomingDamage > 0.f)
+		{
+			const float NewHealth = GetHealth() - LocalIncomingDamage;
+			SetHealth(FMath::Clamp(NewHealth, 0.f, GetMaxHealth()));
+
+			if (const bool bFatal = NewHealth <= 0.f; !bFatal)
+			{
+				FGameplayTagContainer TagContainer;
+				TagContainer.AddTag(FAuraGameplayTags::Get().Effects_HitReact);
+				// 激活带Effects_HitReact标签的 ability
+				EffectProperties.TargetASC->TryActivateAbilitiesByTag(TagContainer);
+			} else
+			{
+				ICombatInterface* CombatInterface = Cast<ICombatInterface>(EffectProperties.TargetAvatarActor);
+				if (CombatInterface)
+				{
+					CombatInterface->Die();
+				}
+			}
+			// 显示伤害数字
+			ShowFloatingText(EffectProperties, LocalIncomingDamage);
+		}
 	}
 	UE_LOG(LogTemp, Warning, TEXT("%s %s: %f"), *EffectProperties.TargetAvatarActor->GetName(), *Data.EvaluatedData.Attribute.GetName(), Data.EvaluatedData.Attribute.GetNumericValue(this));
 }

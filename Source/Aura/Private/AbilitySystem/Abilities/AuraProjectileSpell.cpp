@@ -5,6 +5,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "AuraGameplayTags.h"
 #include "Actor/AuraProjectile.h"
 #include "Interaction/CombatInterface.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -40,7 +41,14 @@ void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocati
 		// 为创建的Projectile添加技能效果
 		const UAbilitySystemComponent* SourceASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetAvatarActorFromActorInfo());
 		const FGameplayEffectContextHandle EffectContextHandle = SourceASC->MakeEffectContext();
-		Projectile->DamageEffectSpecHandle = SourceASC->MakeOutgoingSpec(DamageEffectClass, GetAbilityLevel(), EffectContextHandle);
+		FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(DamageEffectClass, GetAbilityLevel(), EffectContextHandle);
+
+		// 通过SetByCaller设置Damage的值
+		const FAuraGameplayTags& GameplayTags = FAuraGameplayTags::Get();
+		const float ScaleDamage = Damage.GetValueAtLevel(10);
+		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, GameplayTags.Damage, ScaleDamage);
+
+		Projectile->DamageEffectSpecHandle = SpecHandle;
 		// 后续ApplyEffect在Projectile类OnSphereOverlap中
 		Projectile->FinishSpawning(SpawnTransform);
 	}

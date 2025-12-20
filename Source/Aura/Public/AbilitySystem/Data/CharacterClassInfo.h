@@ -6,6 +6,7 @@
 #include "Engine/DataAsset.h"
 #include "CharacterClassInfo.generated.h"
 
+class UGameplayAbility;
 class UGameplayEffect;
 
 UENUM(BlueprintType)
@@ -40,6 +41,12 @@ public:
 	// 下面两类属性都是更具Primary的属性计算得来，不同Character可以共用
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Common Class Defaults")
 	TSubclassOf<UGameplayEffect> SecondaryAttributes;
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Common Defaults")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Common Class Defaults")
 	TSubclassOf<UGameplayEffect> VitalAttributes;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Common Class Defaults")
+	TArray<TSubclassOf<UGameplayAbility>> CommonAbilities;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Common Class Defaults|Damage")
+	TObjectPtr<UCurveTable> DamageCalculationCoefficients;
 };

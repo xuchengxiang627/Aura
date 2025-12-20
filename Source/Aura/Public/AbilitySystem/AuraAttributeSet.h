@@ -92,6 +92,11 @@ public:
 	FGameplayAttributeData Mana; // 法力
 	ATTRIBUTE_ACCESSORS(UAuraAttributeSet, Mana);
 
+	/** Meta Attributes */
+	UPROPERTY(BlueprintReadOnly, Category = "Meta Attributes")
+	FGameplayAttributeData IncomingDamage;
+	ATTRIBUTE_ACCESSORS(UAuraAttributeSet, IncomingDamage);
+
 	UFUNCTION()
 	void OnRep_Health(const FGameplayAttributeData& OldHealth) const;
 	UFUNCTION()
@@ -153,4 +158,5 @@ public:
 
 private:
 	void SetEffectProperties(const FGameplayEffectModCallbackData& Data, FEffectProperties& EffectProperties);
+	void ShowFloatingText(const FEffectProperties& EffectProperties, float LocalIncomingDamage);
 };

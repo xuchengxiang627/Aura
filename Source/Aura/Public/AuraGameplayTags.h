@@ -14,6 +14,9 @@ struct FAuraGameplayTags
 {
 	static const FAuraGameplayTags& Get() { return GameplayTags; }
 	static void InitializeNativeGameplayTags();
+	// 禁用单例的复制
+	FAuraGameplayTags(FAuraGameplayTags const&) = delete;
+	FAuraGameplayTags& operator=(FAuraGameplayTags const&) = delete;
 
 	FGameplayTag Attributes_Primary_Strength;
 	FGameplayTag Attributes_Primary_Intelligence;
@@ -37,6 +40,11 @@ struct FAuraGameplayTags
 	FGameplayTag InputTag_2;
 	FGameplayTag InputTag_3;
 	FGameplayTag InputTag_4;
+
+	FGameplayTag Damage;
+
+	FGameplayTag Effects_HitReact;
 private:
 	static FAuraGameplayTags GameplayTags;
+	FAuraGameplayTags() = default;
 };
