@@ -155,6 +155,28 @@ public:
 	UFUNCTION()
 	void OnRep_MaxMana(const FGameplayAttributeData& OldMaxMana) const;
 
+	/** Resistance */
+	UPROPERTY(ReplicatedUsing=OnRep_ResistanceFire, BlueprintReadOnly, Category = "Resistance Attributes")
+	FGameplayAttributeData ResistanceFire; // 与Intelligence相关
+	ATTRIBUTE_ACCESSORS(UAuraAttributeSet, ResistanceFire);
+	UPROPERTY(ReplicatedUsing=OnRep_ResistanceLightning, BlueprintReadOnly, Category = "Resistance Attributes")
+	FGameplayAttributeData ResistanceLightning;
+	ATTRIBUTE_ACCESSORS(UAuraAttributeSet, ResistanceLightning);
+	UPROPERTY(ReplicatedUsing=OnRep_ResistanceArcane, BlueprintReadOnly, Category = "Resistance Attributes")
+	FGameplayAttributeData ResistanceArcane;
+	ATTRIBUTE_ACCESSORS(UAuraAttributeSet, ResistanceArcane);
+	UPROPERTY(ReplicatedUsing=OnRep_ResistancePhysical, BlueprintReadOnly, Category = "Resistance Attributes")
+	FGameplayAttributeData ResistancePhysical;
+	ATTRIBUTE_ACCESSORS(UAuraAttributeSet, ResistancePhysical);
+
+	UFUNCTION()
+	void OnRep_ResistanceFire(const FGameplayAttributeData& OldResistanceFire) const;
+	UFUNCTION()
+	void OnRep_ResistanceLightning(const FGameplayAttributeData& OldResistanceLightning) const;
+	UFUNCTION()
+	void OnRep_ResistanceArcane(const FGameplayAttributeData& OldResistanceArcane) const;
+	UFUNCTION()
+	void OnRep_ResistancePhysical(const FGameplayAttributeData& OldResistancePhysical) const;
 
 private:
 	void SetEffectProperties(const FGameplayEffectModCallbackData& Data, FEffectProperties& EffectProperties);
