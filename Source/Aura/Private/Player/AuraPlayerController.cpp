@@ -151,7 +151,7 @@ void AAuraPlayerController::AbilityInputTagPressed(FGameplayTag InputTag)
 {
 	if (InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB))
 	{
-		// 当命中的对象存在时，即有高亮敌人时，标记有目标
+		// 当命中的对象存在时，即有高亮敌人时，标记有目
 		bTargeting = ThisActor ? true : false;
 		// 此时还不知道是否自动移动
 		bAutoRunning = false;

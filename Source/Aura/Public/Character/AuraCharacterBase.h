@@ -24,10 +24,20 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UAttributeSet* GetAttributeSet() const { return AttributeSet;}
 
+	/** ICombatInterface*/
+	virtual FVector GetCombatSocketLocation_Implementation(const FGameplayTag& MontageTag) override;
+	virtual bool IsDead_Implementation() const override;
+	virtual AActor* GetAvatar_Implementation() override;
 	virtual UAnimMontage* GetHitReactMontage_Implementation() override;
 	virtual void Die() override;
+	virtual TArray<FTaggedMontage> GetAttackMontages_Implementation() override;
+	/** ICombatInterface*/
+
 	UFUNCTION(NetMulticast, Reliable)
 	virtual void MulticastHandleDeath();
+
+	UPROPERTY(EditAnywhere, Category="Combat")
+	TArray<FTaggedMontage> AttackMontages;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -35,10 +45,13 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Combat")
 	TObjectPtr<USkeletalMeshComponent> Weapon;
 	UPROPERTY(EditAnywhere, Category="Combat")
-	FName WeaponTipSocketName;
-	/** ICombatInterface*/
-	virtual FVector GetCombatSocketLocation() override;
-	/** ICombatInterface*/
+	FName WeaponTipSocketName = FName("TipSocket");
+	UPROPERTY(EditAnywhere, Category="Combat")
+	FName LeftHandSocketName = FName("LeftHandSocket");
+	UPROPERTY(EditAnywhere, Category="Combat")
+	FName RightHandSocketName = FName("RightHandSocket");
+
+	bool bDead = false;
 
 	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
