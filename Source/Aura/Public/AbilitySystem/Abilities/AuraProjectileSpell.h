@@ -23,7 +23,7 @@ protected:
 		const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
 	UFUNCTION(BlueprintCallable, Category="Projectile")
-	void SpawnProjectile(const FVector& ProjectileTargetLocation);
+	void SpawnProjectile(const FVector& ProjectileTargetLocation, const FGameplayTag& SocketTag);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerSpawnProjectile(const FVector& ProjectileTargetLocation, const FVector& SocketLocation);

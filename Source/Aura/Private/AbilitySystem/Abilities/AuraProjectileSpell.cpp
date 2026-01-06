@@ -30,7 +30,7 @@ void UAuraProjectileSpell::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 }
 
-void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocation)
+void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocation, const FGameplayTag& SocketTag)
 {
 	// const FVector SocketLocation1 = Cast<ICombatInterface>(GetAvatarActorFromActorInfo())->GetCombatSocketLocation();
 	// UE_LOG(LogTemp, Log, TEXT("%hhd SpawnProjectile: %s"), GetAvatarActorFromActorInfo()->HasAuthority(),*SocketLocation1.ToString());
@@ -41,7 +41,7 @@ void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocati
 	{
 		if(ICombatInterface* CombatInterface = Cast<ICombatInterface>(GetAvatarActorFromActorInfo()))
 		{
-			const FVector SocketLocation = CombatInterface->Execute_GetCombatSocketLocation(GetAvatarActorFromActorInfo(), FAuraGameplayTags::Get().Montage_Attack_Weapon);
+			const FVector SocketLocation = CombatInterface->Execute_GetCombatSocketLocation(GetAvatarActorFromActorInfo(), SocketTag);
 			ServerSpawnProjectile(ProjectileTargetLocation, SocketLocation);
 		}
 	}

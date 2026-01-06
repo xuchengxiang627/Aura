@@ -88,7 +88,7 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 	float Damage = 0;
 	for (auto& [DamageTypeTag, ResistanceTag]: FAuraGameplayTags::Get().DamageTypesToResistances)
 	{
-		float DamageTypeValue = ExecutionParams.GetOwningSpec().GetSetByCallerMagnitude(DamageTypeTag);
+		float DamageTypeValue = ExecutionParams.GetOwningSpec().GetSetByCallerMagnitude(DamageTypeTag, false);
 
 		if (DamageStatics().TagsToCaptureDefs.Contains(ResistanceTag))
 		{
