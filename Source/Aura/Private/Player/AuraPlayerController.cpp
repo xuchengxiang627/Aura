@@ -186,8 +186,11 @@ void AAuraPlayerController::AbilityInputTagReleased(FGameplayTag InputTag)
 					Spline->AddSplinePoint(Point, ESplineCoordinateSpace::World);
 					// DrawDebugSphere(GetWorld(), Point, 8.f, 12.f, FColor::Blue, false, 5.f);
 				}
-				CachedDestination = NavPath->PathPoints.Last();
-				bAutoRunning = true; // 此时有了样条点可以自动移动
+				if (NavPath->PathPoints.Num() > 1)
+				{
+					CachedDestination = NavPath->PathPoints.Last();
+					bAutoRunning = true; // 此时有了样条点可以自动移动
+				}
 			}
 		}
 		FollowTime = 0.f;
