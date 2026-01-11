@@ -4,7 +4,9 @@
 #include "Character/AuraCharacter.h"
 
 #include "AbilitySystemComponent.h"
+#include "NiagaraComponent.h"
 #include "AbilitySystem/AuraAbilitySystemComponent.h"
+#include "AbilitySystem/Data/LevelUpInfo.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -37,6 +39,12 @@ AAuraCharacter::AAuraCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
 	Camera->bUsePawnControlRotation = false;
+
+	CharacterClass = ECharacterClass::Elementalist;
+
+	LeveUpNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("LeveUpNiagaraComponent"));
+	LeveUpNiagaraComponent->SetupAttachment(RootComponent);
+	LeveUpNiagaraComponent->bAutoActivate = false;
 }
 
 void AAuraCharacter::PossessedBy(AController* NewController)
@@ -59,6 +67,73 @@ int32 AAuraCharacter::GetPlayerLevel()
 	const AAuraPlayerState* PS = GetPlayerState<AAuraPlayerState>();
 	check(PS);
 	return PS->GetPlayerLevel();
+
+}
+
+void AAuraCharacter::AddXP_Implementation(const int32 InXP)
+{
+	if (AAuraPlayerState* PS = GetPlayerState<AAuraPlayerState>())
+	{
+		PS->AddXP(InXP);
+	}
+}
+
+void AAuraCharacter::LevelUp_Implementation()
+{
+	MulticastLevelUpParticles();
+}
+
+int32 AAuraCharacter::GetXP_Implementation()
+{
+	if (const AAuraPlayerState* PS = GetPlayerState<AAuraPlayerState>())
+	{
+		return PS->GetXP();
+	}
+	return 0;
+}
+
+int32 AAuraCharacter::FindLevelForXP_Implementation(int32 InXP)
+{
+	if (const AAuraPlayerState* PS = GetPlayerState<AAuraPlayerState>())
+	{
+		return PS->LevelUpInfo->FindLevelForXP(InXP);
+	}
+	return 1;
+}
+
+int32 AAuraCharacter::GetAttributesPointsReward_Implementation(int32 Level) const
+{
+	if (const AAuraPlayerState* PS = GetPlayerState<AAuraPlayerState>())
+	{
+		return PS->LevelUpInfo->LevelUpInformation[Level].AttributePointAward;
+	}
+	return 0;
+}
+
+int32 AAuraCharacter::GetSpellPointsReward_Implementation(int32 Level) const
+{
+	if (const AAuraPlayerState* PS = GetPlayerState<AAuraPlayerState>())
+	{
+		return PS->LevelUpInfo->LevelUpInformation[Level].SpellPointAward;
+	}
+	return 0;
+}
+
+void AAuraCharacter::AddPlayerLevel_Implementation(int32 InLevel)
+{
+	if (AAuraPlayerState* PS = GetPlayerState<AAuraPlayerState>())
+	{
+		PS->AddLevel(InLevel);
+	}
+}
+
+void AAuraCharacter::AddAttributePoints_Implementation(int32 InAttributePoints)
+{
+
+}
+
+void AAuraCharacter::AddSpellPoints_Implementation(int32 InSpellPoints)
+{
 
 }
 
@@ -85,4 +160,12 @@ void AAuraCharacter::InitAbilityActorInfo()
 		InitializeSecondaryAttributes();
 		InitializeVitalAttributes();
 	}
+}
+
+void AAuraCharacter::MulticastLevelUpParticles_Implementation() const
+{
+	const FVector CameraLocation = Camera->GetComponentLocation();
+	const FVector NiagaraLocation = LeveUpNiagaraComponent->GetComponentLocation();
+	LeveUpNiagaraComponent->SetWorldRotation((CameraLocation - NiagaraLocation).Rotation());
+	if (IsValid(LeveUpNiagaraComponent)) LeveUpNiagaraComponent->Activate(true);
 }

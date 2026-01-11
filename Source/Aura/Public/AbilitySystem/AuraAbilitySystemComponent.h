@@ -25,6 +25,7 @@ public:
 	bool bStartupAbilitiesGiven = false;
 
 	void AddCharacterAbilities(TArray<TSubclassOf<UGameplayAbility>> StartupAbilities);
+	void AddCharacterPassiveAbilities(TArray<TSubclassOf<UGameplayAbility>> StartupPassiveAbilities);
 	virtual void OnRep_ActivateAbilities() override;
 
 	void AbilityInputTagHeld(const FGameplayTag& InputTag);

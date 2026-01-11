@@ -7,9 +7,13 @@
 #include "AbilitySystemComponent.h"
 #include "AuraGameplayTags.h"
 #include "GameplayEffectExtension.h"
+#include "AbilitySystem/AuraAbilitySystemComponent.h"
 #include "AbilitySystem/AuraAbilitySystemLibrary.h"
+#include "Aura/AuraLogChannels.h"
+#include "Character/AuraCharacterBase.h"
 #include "GameFramework/Character.h"
 #include "Interaction/CombatInterface.h"
+#include "Interaction/PlayerInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/AuraPlayerController.h"
@@ -162,6 +166,20 @@ void UAuraAttributeSet::ShowFloatingText(const FEffectProperties& EffectProperti
 	}
 }
 
+void UAuraAttributeSet::SendXPEvent(const FEffectProperties& EffectProperties)
+{
+	if (ICombatInterface* TargetInterface = Cast<ICombatInterface>(EffectProperties.TargetCharacter))
+	{
+		const ECharacterClass TargetCharacterClass = TargetInterface->Execute_GetCharacterClass(EffectProperties.TargetCharacter);
+
+		FGameplayEventData PayLoad;
+		PayLoad.EventTag = FAuraGameplayTags::Get().Attributes_Meta_IncomingXP;
+		PayLoad.EventMagnitude = UAuraAbilitySystemLibrary::GetXPRewardForClassAndLevel(EffectProperties.TargetCharacter, TargetCharacterClass, TargetInterface->GetPlayerLevel());
+
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(EffectProperties.SourceCharacter, FAuraGameplayTags::Get().Attributes_Meta_IncomingXP, PayLoad);
+	}
+}
+
 // 为什么不在之前set，因为该函数调用时，effect应用完成，但属性值还没有复制到客户端，此时再修改可以避免二次复制
 void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
@@ -201,12 +219,46 @@ void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 				{
 					CombatInterface->Die();
 				}
+				SendXPEvent(EffectProperties);
 			}
 			// 显示伤害数字
 			ShowFloatingText(EffectProperties, LocalIncomingDamage);
 		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("%s %s: %f"), *EffectProperties.TargetAvatarActor->GetName(), *Data.EvaluatedData.Attribute.GetName(), Data.EvaluatedData.Attribute.GetNumericValue(this));
+	if (Data.EvaluatedData.Attribute == GetIncomingXPAttribute())
+	{
+		const float LocalIncomingXP = GetIncomingXP();
+		SetIncomingXP(0.f);
+
+		if (ICombatInterface *CombatInterface = Cast<ICombatInterface>(EffectProperties.SourceCharacter);
+			CombatInterface && EffectProperties.SourceCharacter->Implements<UPlayerInterface>())
+		{
+			const int32 CurrentLevel = CombatInterface->GetPlayerLevel();
+			// int32 CurrentXP = IPlayerInterface::Execute_GetXP(EffectProperties.SourceCharacter);
+
+			IPlayerInterface::Execute_AddXP(EffectProperties.SourceCharacter, LocalIncomingXP);
+
+			const int32 NewXP = IPlayerInterface::Execute_GetXP(EffectProperties.SourceCharacter);
+			const int32 NewLevel = IPlayerInterface::Execute_FindLevelForXP(EffectProperties.SourceCharacter, NewXP);
+			const int32 NumOfLevelUp = NewLevel - CurrentLevel;
+			if (NumOfLevelUp > 0)
+			{
+				const int32 AttributePointReward = IPlayerInterface::Execute_GetAttributesPointsReward(EffectProperties.SourceCharacter, CurrentLevel);
+				const int32 SpellPointReward = IPlayerInterface::Execute_GetSpellPointsReward(EffectProperties.SourceCharacter, CurrentLevel);
+
+				IPlayerInterface::Execute_AddPlayerLevel(EffectProperties.SourceCharacter, NumOfLevelUp);
+				IPlayerInterface::Execute_AddAttributePoints(EffectProperties.SourceCharacter, AttributePointReward);
+				IPlayerInterface::Execute_AddSpellPoints(EffectProperties.SourceCharacter, SpellPointReward);
+
+				SetHealth(GetMaxHealth());
+				SetMana(GetMaxMana());
+
+				IPlayerInterface::Execute_LevelUp(EffectProperties.SourceCharacter);
+			}
+		}
+		UE_LOG(LogAura, Warning, TEXT("IncomingXP: %f"), LocalIncomingXP);
+	}
+	// UE_LOG(LogTemp, Warning, TEXT("%s %s: %f"), *EffectProperties.TargetAvatarActor->GetName(), *Data.EvaluatedData.Attribute.GetName(), Data.EvaluatedData.Attribute.GetNumericValue(this));
 }
 
 void UAuraAttributeSet::OnRep_Strength(const FGameplayAttributeData& OldStrength) const

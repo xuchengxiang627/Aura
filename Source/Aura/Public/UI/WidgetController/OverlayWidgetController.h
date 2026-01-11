@@ -35,6 +35,7 @@ struct FUIWidgetRow: public FTableRowBase
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMessageWidgetRowSignature, FUIWidgetRow, Row);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAbilityInfoSignature, FAuraAbilityInfo, AbilityInfo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerStateChangedSignature, int32, NewValue);
 /**
  * 
  */
@@ -81,6 +82,16 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "GAS|Messages")
 	FAbilityInfoSignature AbilityInfoDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = "GAS|XP")
+	FOnAttributeChangedSignature OnXPPercentChangedDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = "GAS|Level")
+	FOnPlayerStateChangedSignature OnPlayerLevelChangedDelegate;
+	UPROPERTY(BlueprintAssignable, Category = "GAS|AttributesPoints")
+	FOnPlayerStateChangedSignature OnAttributesPointsChangedDelegate;
+	UPROPERTY(BlueprintAssignable, Category = "GAS|SpellPoints")
+	FOnPlayerStateChangedSignature OnSpellPointsChangedDelegate;
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Widget Data")
 	TObjectPtr<UDataTable> MessageWidgetDataTable;
@@ -97,6 +108,9 @@ protected:
 	TObjectPtr<UAbilityInfo> AbilityInfo;
 
 	void OnInitializeStartupAbilities(UAuraAbilitySystemComponent* AuraASC);
+
+	void OnXPChanged(int32 NewXP);
+	void OnLevelChanged(int32 NewLevel);
 };
 
 template <typename T>
