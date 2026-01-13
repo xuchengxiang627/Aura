@@ -88,10 +88,6 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "GAS|Level")
 	FOnPlayerStateChangedSignature OnPlayerLevelChangedDelegate;
-	UPROPERTY(BlueprintAssignable, Category = "GAS|AttributesPoints")
-	FOnPlayerStateChangedSignature OnAttributesPointsChangedDelegate;
-	UPROPERTY(BlueprintAssignable, Category = "GAS|SpellPoints")
-	FOnPlayerStateChangedSignature OnSpellPointsChangedDelegate;
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Widget Data")
 	TObjectPtr<UDataTable> MessageWidgetDataTable;

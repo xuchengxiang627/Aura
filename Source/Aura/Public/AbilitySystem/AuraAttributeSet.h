@@ -56,6 +56,7 @@ public:
 	// 在这里对属性进行clamp
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
 	// TMap<FGameplayTag, FAttributeSignature> TagsToAttributes;
 
@@ -186,4 +187,7 @@ private:
 	void ShowFloatingText(const FEffectProperties& EffectProperties, float LocalIncomingDamage);
 
 	void SendXPEvent(const FEffectProperties& EffectProperties);
+
+	bool bTopOffHealth = false;
+	bool bTopOffMana = false;
 };

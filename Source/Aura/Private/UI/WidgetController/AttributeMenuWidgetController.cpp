@@ -4,8 +4,10 @@
 #include "UI/WidgetController/AttributeMenuWidgetController.h"
 
 #include "AuraGameplayTags.h"
+#include "AbilitySystem/AuraAbilitySystemComponent.h"
 #include "AbilitySystem/AuraAttributeSet.h"
 #include "AbilitySystem/Data/AttributeInfo.h"
+#include "Player/AuraPlayerState.h"
 
 void UAttributeMenuWidgetController::BroadcastInitialValues()
 {
@@ -25,6 +27,8 @@ void UAttributeMenuWidgetController::BroadcastInitialValues()
 	// UE_LOG(LogTemp, Warning, TEXT("Health: %f"), AuraAttributeSet->GetHealth())
 	// UE_LOG(LogTemp, Warning, TEXT("Strength: %f"), AuraAttributeSet->GetStrength())
 	// UE_LOG(LogTemp, Warning, TEXT("Armor: %f"), AuraAttributeSet->GetArmor())
+	AAuraPlayerState* AuraPlayerState = CastChecked<AAuraPlayerState>(PlayerState);
+	OnAttributesPointsChangedDelegate.Broadcast(AuraPlayerState->GetAttributePoints());
 }
 
 void UAttributeMenuWidgetController::BindCallbacksToDependencies()
@@ -41,5 +45,18 @@ void UAttributeMenuWidgetController::BindCallbacksToDependencies()
 			}
 		);
 	}
+	AAuraPlayerState* AuraPlayerState = CastChecked<AAuraPlayerState>(PlayerState);
+	AuraPlayerState->OnAttributePointsChangeDelegate.AddLambda([this](int32 NewPoints)
+	{
+		OnAttributesPointsChangedDelegate.Broadcast(NewPoints);
+	});
+}
 
+void UAttributeMenuWidgetController::UpgradeAttribute(const FGameplayTag& AttributeTag)
+{
+	// UAuraAttributeSet* AuraAttributeSet = CastChecked<UAuraAttributeSet>(AttributeSet);
+	// FGameplayAttribute Attribute = AuraAttributeSet->TagsToAttributes.FindChecked(AttributeTag)();
+	// float NewValue = Attribute.GetNumericValue(AuraAttributeSet) + 1;
+	// Attribute.SetNumericValueChecked(NewValue, AuraAttributeSet);
+	CastChecked<UAuraAbilitySystemComponent>(AbilitySystemComponent)->UpgradeAttribute(AttributeTag);
 }

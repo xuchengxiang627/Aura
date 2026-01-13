@@ -42,6 +42,8 @@ public:
 	virtual void AddPlayerLevel_Implementation(int32 InLevel) override;
 	virtual void AddAttributePoints_Implementation(int32 InAttributePoints) override;
 	virtual void AddSpellPoints_Implementation(int32 InSpellPoints) override;
+	virtual int32 GetAttributesPoints_Implementation() const override;
+	virtual int32 GetSpellPoints_Implementation() const override;
 	/** IPlayer Interface*/
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effects")

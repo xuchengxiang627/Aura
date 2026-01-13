@@ -28,6 +28,8 @@ void AAuraPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AAuraPlayerState, Level);
 	DOREPLIFETIME(AAuraPlayerState, XP);
+	DOREPLIFETIME(AAuraPlayerState, AttributePoints);
+	DOREPLIFETIME(AAuraPlayerState, SpellPoints);
 }
 
 UAbilitySystemComponent* AAuraPlayerState::GetAbilitySystemComponent() const
@@ -53,6 +55,30 @@ void AAuraPlayerState::SetXP(const int32 NewXP)
 	OnXPChangeDelegate.Broadcast(XP);
 }
 
+void AAuraPlayerState::SetAttributePoints(const int32 NewAttributePoints)
+{
+	AttributePoints = NewAttributePoints;
+	OnAttributePointsChangeDelegate.Broadcast(AttributePoints);
+}
+
+void AAuraPlayerState::SetSpellPoints(const int32 NewSpellPoints)
+{
+	SpellPoints = NewSpellPoints;
+	OnSpellPointsChangeDelegate.Broadcast(SpellPoints);
+}
+
+void AAuraPlayerState::AddAttributePoints(const int32 InAttributePoints)
+{
+	AttributePoints += InAttributePoints;
+	OnAttributePointsChangeDelegate.Broadcast(AttributePoints);
+}
+
+void AAuraPlayerState::AddSpellPoints(const int32 InSpellPoints)
+{
+	SpellPoints += InSpellPoints;
+	OnSpellPointsChangeDelegate.Broadcast(SpellPoints);
+}
+
 void AAuraPlayerState::AddXP(const int32 InXP)
 {
 	XP += InXP;
@@ -67,4 +93,14 @@ void AAuraPlayerState::OnRep_Level(int32 OldLevel)
 void AAuraPlayerState::OnRep_XP(int32 OldXP)
 {
 	OnXPChangeDelegate.Broadcast(XP);
+}
+
+void AAuraPlayerState::OnRep_AttributePoints(int32 OldAttributePoints)
+{
+	OnAttributePointsChangeDelegate.Broadcast(AttributePoints);
+}
+
+void AAuraPlayerState::OnRep_SpellPoints(int32 OldSpellPoints)
+{
+	OnSpellPointsChangeDelegate.Broadcast(SpellPoints);
 }
