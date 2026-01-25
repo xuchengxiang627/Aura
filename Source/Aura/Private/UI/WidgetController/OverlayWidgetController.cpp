@@ -3,6 +3,7 @@
 
 #include "UI/WidgetController/OverlayWidgetController.h"
 
+#include "AuraGameplayTags.h"
 #include "AbilitySystem/AuraAbilitySystemComponent.h"
 #include "AbilitySystem/AuraAttributeSet.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
@@ -48,16 +49,18 @@ void UOverlayWidgetController::BindCallbacksToDependencies()
 	});
 	if (AuraASC->bStartupAbilitiesGiven) // 如果已经给技能了，说明已经广播过了，此时再绑定没有意义，直接调用要回调的函数
 	{
-		OnInitializeStartupAbilities(AuraASC);
+		BroadCastAbilityInfo();
 	} else // 还没有给技能，绑定回调，等到技能给后，再调用要回调的函数
 	{
-		AuraASC->AbilityGivenDelegate.AddUObject(this, &UOverlayWidgetController::OnInitializeStartupAbilities);
+		AuraASC->AbilityGivenDelegate.AddUObject(this, &UOverlayWidgetController::BroadCastAbilityInfo);
 	}
 
 
 	AAuraPlayerState* AuraPlayerState = CastChecked<AAuraPlayerState>(PlayerState);
 	AuraPlayerState->OnXPChangeDelegate.AddUObject(this, &UOverlayWidgetController::OnXPChanged);
 	AuraPlayerState->OnLevelChangeDelegate.AddUObject(this, &UOverlayWidgetController::OnLevelChanged);
+
+	AuraASC->AbilityEquipped.AddUObject(this, &UOverlayWidgetController::OnAbilityEquipped);
 }
 
 void UOverlayWidgetController::HealthChanged(const FOnAttributeChangeData& Data) const
@@ -110,4 +113,19 @@ void UOverlayWidgetController::OnXPChanged(int32 NewXP)
 void UOverlayWidgetController::OnLevelChanged(int32 NewLevel)
 {
 	OnPlayerLevelChangedDelegate.Broadcast(NewLevel);
+}
+
+void UOverlayWidgetController::OnAbilityEquipped(const FGameplayTag& AbilityTag, const FGameplayTag& StatusTag,
+	const FGameplayTag& SlotTag, const FGameplayTag& PreviousSlotTag)
+{
+	FAuraAbilityInfo LastSlotInfo;
+	LastSlotInfo.StatusTag = FAuraGameplayTags::Get().Abilities_Status_Unlocked;
+	LastSlotInfo.InputTag = PreviousSlotTag;
+	LastSlotInfo.AbilityTag = FAuraGameplayTags::Get().Abilities_None;
+	AbilityInfoDelegate.Broadcast(LastSlotInfo);
+
+	FAuraAbilityInfo NewSlotInfo = AbilityInfo->FindAbilityInfoForTag(AbilityTag);
+	NewSlotInfo.StatusTag = StatusTag;
+	NewSlotInfo.InputTag = SlotTag;
+	AbilityInfoDelegate.Broadcast(NewSlotInfo);
 }

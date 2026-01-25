@@ -5,6 +5,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "AuraGameplayTags.h"
 #include "Interaction/CombatInterface.h"
 
 void UAuraDamageGameplayAbility::CauseDamage(AActor* TargetActor)
@@ -20,4 +21,13 @@ void UAuraDamageGameplayAbility::CauseDamage(AActor* TargetActor)
 		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tag, ScaleDamage.GetValueAtLevel(GetAbilityLevel()));
 	}
 	GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor));
+}
+
+float UAuraDamageGameplayAbility::GetDamageByDamageType(float Level, const FGameplayTag& DamageType)
+{
+	if (!DamageTypes.Contains(DamageType))
+	{
+		return 0.f;
+	}
+	return DamageTypes[DamageType].GetValueAtLevel(Level);
 }

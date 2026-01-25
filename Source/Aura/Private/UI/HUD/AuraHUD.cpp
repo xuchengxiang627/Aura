@@ -7,6 +7,7 @@
 #include "UI/Widget/AuraUserWidget.h"
 #include "UI/WidgetController/AttributeMenuWidgetController.h"
 #include "UI/WidgetController/OverlayWidgetController.h"
+#include "UI/WidgetController/SpellMenuWidgetController.h"
 
 UOverlayWidgetController* AAuraHUD::GetOverlayWidgetController(const FWidgetControllerParams& WidgetControllerParams)
 {
@@ -41,6 +42,24 @@ UAttributeMenuWidgetController* AAuraHUD::GetAttributeMenuWidgetController(
 		AttributeMenuWidgetController->BindCallbacksToDependencies();
 	}
 	return AttributeMenuWidgetController;
+}
+
+USpellMenuWidgetController* AAuraHUD::GetSpellMenuWidgetController(
+	const FWidgetControllerParams& WidgetControllerParams)
+{
+	if (SpellMenuWidgetController == nullptr)
+	{
+		if (SpellMenuWidgetControllerClass == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Spell Menu Widget Controller Class is nullptr in AuraHUD"))
+			return nullptr;
+		}
+		SpellMenuWidgetController = NewObject<USpellMenuWidgetController>(this, SpellMenuWidgetControllerClass);
+		SpellMenuWidgetController->SetWidgetControllerParams(WidgetControllerParams);
+		// 绑定依赖
+		 SpellMenuWidgetController->BindCallbacksToDependencies();
+	}
+	return SpellMenuWidgetController;
 }
 
 void AAuraHUD::InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySystemComponent* ASC, UAttributeSet* AS)

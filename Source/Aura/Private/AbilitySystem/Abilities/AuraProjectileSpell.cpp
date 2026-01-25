@@ -90,7 +90,7 @@ void UAuraProjectileSpell::ServerSpawnProjectile_Implementation(const FVector& P
 	// UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, GameplayTags.Damage, ScaleDamage);
 	for (auto& [Tag, ScaleDamage] : DamageTypes)
 	{
-		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tag, ScaleDamage.GetValueAtLevel(10));
+		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tag, ScaleDamage.GetValueAtLevel(GetAbilityLevel()));
 
 		Projectile->DamageEffectSpecHandle = SpecHandle;
 		// 后续ApplyEffect在Projectile类OnSphereOverlap中
