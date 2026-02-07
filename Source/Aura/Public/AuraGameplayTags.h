@@ -57,6 +57,17 @@ struct FAuraGameplayTags
 	FGameplayTag Damage_Arcane;
 	FGameplayTag Damage_Physical;
 
+	TMap<FGameplayTag, FGameplayTag> DamageTypesToDeBuffs;
+	FGameplayTag DeBuff_Burn;
+	FGameplayTag DeBuff_Stun;
+	FGameplayTag DeBuff_Arcane;
+	FGameplayTag DeBuff_Physical;
+
+	FGameplayTag DeBuff_Chance;
+	FGameplayTag DeBuff_Duration;
+	FGameplayTag DeBuff_Damage;
+	FGameplayTag DeBuff_Frequency;
+
 	FGameplayTag Effects_HitReact;
 
 	FGameplayTag Abilities_Attack;

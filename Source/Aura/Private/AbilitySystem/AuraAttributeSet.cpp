@@ -5,6 +5,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "AuraAbilityTypes.h"
 #include "AuraGameplayTags.h"
 #include "GameplayEffectExtension.h"
 #include "AbilitySystem/AuraAbilitySystemComponent.h"
@@ -12,6 +13,7 @@
 #include "Aura/AuraLogChannels.h"
 #include "Character/AuraCharacterBase.h"
 #include "GameFramework/Character.h"
+#include "GameplayEffectComponents/TargetTagsGameplayEffectComponent.h"
 #include "Interaction/CombatInterface.h"
 #include "Interaction/PlayerInterface.h"
 #include "Kismet/GameplayStatics.h"
@@ -180,12 +182,66 @@ void UAuraAttributeSet::SendXPEvent(const FEffectProperties& EffectProperties)
 	}
 }
 
+void UAuraAttributeSet::DeBuff(const FEffectProperties& EffectProperties)
+{
+	// 创建GE并应用
+	FGameplayEffectContextHandle EffectContextHandle = EffectProperties.SourceASC->MakeEffectContext();
+	EffectContextHandle.AddSourceObject(EffectProperties.SourceAvatarActor);
+
+	FGameplayTag DamageType = UAuraAbilitySystemLibrary::GetDamageType(EffectProperties.EffectContextHandle);
+	const float DeBuffDamage = UAuraAbilitySystemLibrary::GetDeBuffDamage(EffectProperties.EffectContextHandle);
+	const float DeBuffDuration = UAuraAbilitySystemLibrary::GetDeBuffDuration(EffectProperties.EffectContextHandle);
+	const float DeBuffFrequency = UAuraAbilitySystemLibrary::GetDeBuffFrequency(EffectProperties.EffectContextHandle);
+
+	const FString DeBuffName = FString::Printf(TEXT("%s DeBuff"), *DamageType.ToString());
+	UGameplayEffect* DeBuffEffect = NewObject<UGameplayEffect>(GetTransientPackage(), FName(*DeBuffName));
+	DeBuffEffect->DurationPolicy = EGameplayEffectDurationType::HasDuration;
+	DeBuffEffect->Period = DeBuffFrequency;
+	DeBuffEffect->DurationMagnitude = FScalableFloat(DeBuffDuration);
+
+	// 为目标添加标签
+	// 旧代码（已弃用）
+	// DeBuffEffect->InheritableOwnedTagsContainer.AddTag(FAuraGameplayTags::Get().DamageTypesToDeBuffs[DamageType]);
+	// 新代码（使用 UTargetTagsGameplayEffectComponent）
+	UTargetTagsGameplayEffectComponent& TargetTagsComponent = DeBuffEffect->FindOrAddComponent<UTargetTagsGameplayEffectComponent>();
+	FInheritedTagContainer TagContainer;
+	TagContainer.AddTag(FAuraGameplayTags::Get().DamageTypesToDeBuffs[DamageType]);
+	TargetTagsComponent.SetAndApplyTargetTagChanges(TagContainer); // 设置目标标签
+
+	// 堆叠策略
+	DeBuffEffect->StackingType = EGameplayEffectStackingType::AggregateBySource;
+	DeBuffEffect->StackLimitCount = 1;
+
+	// 修饰符
+	FGameplayModifierInfo ModifierInfo;
+	ModifierInfo.ModifierMagnitude = FScalableFloat(DeBuffDamage);
+	ModifierInfo.ModifierOp = EGameplayModOp::Additive;
+	ModifierInfo.Attribute = GetIncomingDamageAttribute();
+	DeBuffEffect->Modifiers.Add(ModifierInfo);
+
+	if (const FGameplayEffectSpec* GameplayEffectSpec = new FGameplayEffectSpec(DeBuffEffect, EffectContextHandle, 1.f))
+	{
+		FAuraGameplayEffectContext* AuraEffectContext = static_cast<FAuraGameplayEffectContext*>(GameplayEffectSpec->GetContext().Get());
+		AuraEffectContext->SetDamageType(MakeShared<FGameplayTag>(DamageType));
+		EffectProperties.TargetASC->ApplyGameplayEffectSpecToSelf(*GameplayEffectSpec);
+	}
+}
+
 // 为什么不在之前set，因为该函数调用时，effect应用完成，但属性值还没有复制到客户端，此时再修改可以避免二次复制
 void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
 	Super::PostGameplayEffectExecute(Data);
 	FEffectProperties EffectProperties;
 	SetEffectProperties(Data, EffectProperties);
+
+	if (EffectProperties.TargetCharacter->Implements<UCombatInterface>())
+	{
+		if (ICombatInterface::Execute_IsDead(EffectProperties.TargetCharacter))
+		{
+			return;
+		}
+	}
+
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
 		// UE_LOG(LogTemp, Warning, TEXT("---Set: %p"), this)
@@ -199,63 +255,11 @@ void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 	}
 	if (Data.EvaluatedData.Attribute == GetIncomingDamageAttribute())
 	{
-		const float LocalIncomingDamage = GetIncomingDamage();
-		SetIncomingDamage(0.f);
-		if (LocalIncomingDamage > 0.f)
-		{
-			const float NewHealth = GetHealth() - LocalIncomingDamage;
-			SetHealth(FMath::Clamp(NewHealth, 0.f, GetMaxHealth()));
-
-			if (const bool bFatal = NewHealth <= 0.f; !bFatal)
-			{
-				FGameplayTagContainer TagContainer;
-				TagContainer.AddTag(FAuraGameplayTags::Get().Effects_HitReact);
-				// 激活带Effects_HitReact标签的 ability
-				EffectProperties.TargetASC->TryActivateAbilitiesByTag(TagContainer);
-			} else
-			{
-				ICombatInterface* CombatInterface = Cast<ICombatInterface>(EffectProperties.TargetAvatarActor);
-				if (CombatInterface)
-				{
-					CombatInterface->Die();
-				}
-				SendXPEvent(EffectProperties);
-			}
-			// 显示伤害数字
-			ShowFloatingText(EffectProperties, LocalIncomingDamage);
-		}
+		HandleIncomingDamage(EffectProperties);
 	}
 	if (Data.EvaluatedData.Attribute == GetIncomingXPAttribute())
 	{
-		const float LocalIncomingXP = GetIncomingXP();
-		SetIncomingXP(0.f);
-
-		if (ICombatInterface *CombatInterface = Cast<ICombatInterface>(EffectProperties.SourceCharacter);
-			CombatInterface && EffectProperties.SourceCharacter->Implements<UPlayerInterface>())
-		{
-			const int32 CurrentLevel = CombatInterface->GetPlayerLevel();
-			// int32 CurrentXP = IPlayerInterface::Execute_GetXP(EffectProperties.SourceCharacter);
-
-			IPlayerInterface::Execute_AddXP(EffectProperties.SourceCharacter, LocalIncomingXP);
-
-			const int32 NewXP = IPlayerInterface::Execute_GetXP(EffectProperties.SourceCharacter);
-			const int32 NewLevel = IPlayerInterface::Execute_FindLevelForXP(EffectProperties.SourceCharacter, NewXP);
-			const int32 NumOfLevelUp = NewLevel - CurrentLevel;
-			if (NumOfLevelUp > 0)
-			{
-				const int32 AttributePointReward = IPlayerInterface::Execute_GetAttributesPointsReward(EffectProperties.SourceCharacter, CurrentLevel);
-				const int32 SpellPointReward = IPlayerInterface::Execute_GetSpellPointsReward(EffectProperties.SourceCharacter, CurrentLevel);
-
-				IPlayerInterface::Execute_AddPlayerLevel(EffectProperties.SourceCharacter, NumOfLevelUp);
-				IPlayerInterface::Execute_AddAttributePoints(EffectProperties.SourceCharacter, AttributePointReward);
-				IPlayerInterface::Execute_AddSpellPoints(EffectProperties.SourceCharacter, SpellPointReward);
-
-				IPlayerInterface::Execute_LevelUp(EffectProperties.SourceCharacter);
-				bTopOffHealth = true;
-				bTopOffMana = true;
-			}
-		}
-		UE_LOG(LogAura, Warning, TEXT("IncomingXP: %f"), LocalIncomingXP);
+		HandleIncomingXP(EffectProperties);
 	}
 	// UE_LOG(LogTemp, Warning, TEXT("%s %s: %f"), *EffectProperties.TargetAvatarActor->GetName(), *Data.EvaluatedData.Attribute.GetName(), Data.EvaluatedData.Attribute.GetNumericValue(this));
 }
@@ -272,6 +276,79 @@ void UAuraAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute,
 		SetMana(GetMaxMana());
 		bTopOffMana = false;
 	}
+}
+
+void UAuraAttributeSet::HandleIncomingDamage(const FEffectProperties& EffectProperties)
+{
+	const float LocalIncomingDamage = GetIncomingDamage();
+	SetIncomingDamage(0.f);
+	if (LocalIncomingDamage > 0.f)
+	{
+		const float NewHealth = GetHealth() - LocalIncomingDamage;
+		SetHealth(FMath::Clamp(NewHealth, 0.f, GetMaxHealth()));
+
+		if (const bool bFatal = NewHealth <= 0.f; !bFatal)
+		{
+			FGameplayTagContainer TagContainer;
+			TagContainer.AddTag(FAuraGameplayTags::Get().Effects_HitReact);
+			// 激活带Effects_HitReact标签的 ability
+			EffectProperties.TargetASC->TryActivateAbilitiesByTag(TagContainer);
+
+			const FVector KnockBackForce = UAuraAbilitySystemLibrary::GetKnockBackForce(EffectProperties.EffectContextHandle);
+			if (!KnockBackForce.IsNearlyZero(1.f))
+			{
+				EffectProperties.TargetCharacter->LaunchCharacter(KnockBackForce, true, true);
+			}
+		} else
+		{
+			ICombatInterface* CombatInterface = Cast<ICombatInterface>(EffectProperties.TargetAvatarActor);
+			if (CombatInterface)
+			{
+				CombatInterface->Die(UAuraAbilitySystemLibrary::GetDeathImpulse(EffectProperties.EffectContextHandle));
+			}
+			SendXPEvent(EffectProperties);
+		}
+		// 显示伤害数字
+		ShowFloatingText(EffectProperties, LocalIncomingDamage);
+		if (UAuraAbilitySystemLibrary::IsSuccessfulDeBuff(EffectProperties.EffectContextHandle))
+		{
+			// 添加deBuff
+			DeBuff(EffectProperties);
+		}
+	}
+}
+
+void UAuraAttributeSet::HandleIncomingXP(const FEffectProperties& EffectProperties)
+{
+	const float LocalIncomingXP = GetIncomingXP();
+	SetIncomingXP(0.f);
+
+	if (ICombatInterface *CombatInterface = Cast<ICombatInterface>(EffectProperties.SourceCharacter);
+		CombatInterface && EffectProperties.SourceCharacter->Implements<UPlayerInterface>())
+	{
+		const int32 CurrentLevel = CombatInterface->GetPlayerLevel();
+		// int32 CurrentXP = IPlayerInterface::Execute_GetXP(EffectProperties.SourceCharacter);
+
+		IPlayerInterface::Execute_AddXP(EffectProperties.SourceCharacter, LocalIncomingXP);
+
+		const int32 NewXP = IPlayerInterface::Execute_GetXP(EffectProperties.SourceCharacter);
+		const int32 NewLevel = IPlayerInterface::Execute_FindLevelForXP(EffectProperties.SourceCharacter, NewXP);
+		const int32 NumOfLevelUp = NewLevel - CurrentLevel;
+		if (NumOfLevelUp > 0)
+		{
+			const int32 AttributePointReward = IPlayerInterface::Execute_GetAttributesPointsReward(EffectProperties.SourceCharacter, CurrentLevel);
+			const int32 SpellPointReward = IPlayerInterface::Execute_GetSpellPointsReward(EffectProperties.SourceCharacter, CurrentLevel);
+
+			IPlayerInterface::Execute_AddPlayerLevel(EffectProperties.SourceCharacter, NumOfLevelUp);
+			IPlayerInterface::Execute_AddAttributePoints(EffectProperties.SourceCharacter, AttributePointReward);
+			IPlayerInterface::Execute_AddSpellPoints(EffectProperties.SourceCharacter, SpellPointReward);
+
+			IPlayerInterface::Execute_LevelUp(EffectProperties.SourceCharacter);
+			bTopOffHealth = true;
+			bTopOffMana = true;
+		}
+	}
+	// UE_LOG(LogAura, Warning, TEXT("IncomingXP: %f"), LocalIncomingXP);
 }
 
 void UAuraAttributeSet::OnRep_Strength(const FGameplayAttributeData& OldStrength) const

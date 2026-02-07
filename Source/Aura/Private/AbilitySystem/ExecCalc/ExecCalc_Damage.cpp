@@ -79,10 +79,47 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 	const int SourceLevel = SourceCombatInterface->GetPlayerLevel();
 	const int TargetLevel = TargetCombatInterface->GetPlayerLevel();
 
+	const FGameplayEffectSpec& EffectSpec = ExecutionParams.GetOwningSpec();
 
 	FAggregatorEvaluateParameters EvaluationParameters;
-	EvaluationParameters.SourceTags = ExecutionParams.GetOwningSpec().CapturedSourceTags.GetAggregatedTags();
-	EvaluationParameters.TargetTags = ExecutionParams.GetOwningSpec().CapturedTargetTags.GetAggregatedTags();
+	EvaluationParameters.SourceTags = EffectSpec.CapturedSourceTags.GetAggregatedTags();
+	EvaluationParameters.TargetTags = EffectSpec.CapturedTargetTags.GetAggregatedTags();
+
+	// DeBuff
+	for (auto& [DamageType, DeBuffTag]: FAuraGameplayTags::Get().DamageTypesToDeBuffs)
+	{
+		const float TypeDamage = EffectSpec.GetSetByCallerMagnitude(DamageType, false, -1.f);
+		if (TypeDamage > -.5f)
+		{
+			const float SourceDeBuffChance = EffectSpec.GetSetByCallerMagnitude(FAuraGameplayTags::Get().DeBuff_Chance, false, -1.f);
+
+			float Resistance = 0.f;
+			ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(
+				DamageStatics().TagsToCaptureDefs[FAuraGameplayTags::Get().DamageTypesToResistances[DamageType]],
+				EvaluationParameters,
+				Resistance);
+			Resistance = FMath::Clamp(Resistance, 0.f, 100.f);
+
+			const float EffectiveDeBuffChance = SourceDeBuffChance * (100.f - Resistance) / 100.f;
+			const bool bDeBuff = FMath::RandRange(1, 100) < EffectiveDeBuffChance;
+			if (bDeBuff)
+			{
+				// 为context设置Debuff
+				FGameplayEffectContextHandle Context = ExecutionParams.GetOwningSpec().GetContext();
+				UAuraAbilitySystemLibrary::SetIsSuccessfulDeBuff(Context, true);
+				UAuraAbilitySystemLibrary::SetDeBuffDamage(Context,
+					EffectSpec.GetSetByCallerMagnitude(FAuraGameplayTags::Get().DeBuff_Damage, false, -1.f));
+				UAuraAbilitySystemLibrary::SetDeBuffDuration(
+					Context,
+					EffectSpec.GetSetByCallerMagnitude(FAuraGameplayTags::Get().DeBuff_Duration, false, -1.f));
+				UAuraAbilitySystemLibrary::SetDeBuffFrequency(
+					Context,
+					EffectSpec.GetSetByCallerMagnitude(FAuraGameplayTags::Get().DeBuff_Frequency, false, -1.f));
+				UAuraAbilitySystemLibrary::SetDamageType(Context, DamageType);
+			}
+		}
+
+	}
 
 	// 通过SetByCaller获取Damage的值, 计算该Effect造成在目标抗性下的各类属性伤害
 	float Damage = 0;

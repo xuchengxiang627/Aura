@@ -183,10 +183,13 @@ public:
 	void OnRep_ResistancePhysical(const FGameplayAttributeData& OldResistancePhysical) const;
 
 private:
+	void HandleIncomingDamage(const FEffectProperties& EffectProperties);
+	void HandleIncomingXP(const FEffectProperties& EffectProperties);
 	void SetEffectProperties(const FGameplayEffectModCallbackData& Data, FEffectProperties& EffectProperties);
 	void ShowFloatingText(const FEffectProperties& EffectProperties, float LocalIncomingDamage);
 
 	void SendXPEvent(const FEffectProperties& EffectProperties);
+	void DeBuff(const FEffectProperties& EffectProperties);
 
 	bool bTopOffHealth = false;
 	bool bTopOffMana = false;

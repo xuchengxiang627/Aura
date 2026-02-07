@@ -174,6 +174,7 @@ void AAuraCharacter::InitAbilityActorInfo()
 
 		AbilitySystemComponent = PS->GetAbilitySystemComponent();
 		AttributeSet = PS->GetAttributeSet();
+		OnASCRegistered.Broadcast(AbilitySystemComponent);
 		// 添加界面
 		if (AAuraPlayerController* PC = GetController<AAuraPlayerController>())
 		{

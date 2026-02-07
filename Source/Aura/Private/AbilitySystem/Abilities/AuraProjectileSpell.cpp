@@ -72,28 +72,10 @@ void UAuraProjectileSpell::ServerSpawnProjectile_Implementation(const FVector& P
 		Cast<APawn>(GetAvatarActorFromActorInfo()),
 		ESpawnActorCollisionHandlingMethod::AlwaysSpawn
 	);
-	// 为创建的Projectile添加技能效果
-	const UAbilitySystemComponent* SourceASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(
-		GetAvatarActorFromActorInfo());
-	FGameplayEffectContextHandle EffectContextHandle = SourceASC->MakeEffectContext();
-	EffectContextHandle.SetAbility(this);
-	EffectContextHandle.AddSourceObject(Projectile);
-	EffectContextHandle.AddActors({Projectile});
-	EffectContextHandle.AddHitResult(FHitResult());
+	// 为创建的Projectile添加GE参数
+	Projectile->DamageEffectParams = MakeDamageEffectParamsFromClassDefaults();
 
-	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(DamageEffectClass, GetAbilityLevel(),
-	                                                                   EffectContextHandle);
+	// 后续ApplyEffect在Projectile类OnSphereOverlap中
+	Projectile->FinishSpawning(SpawnTransform);
 
-	// 通过SetByCaller设置Damage的值
-	// const FAuraGameplayTags& GameplayTags = FAuraGameplayTags::Get();
-	// const float ScaleDamage = Damage.GetValueAtLevel(10);
-	// UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, GameplayTags.Damage, ScaleDamage);
-	for (auto& [Tag, ScaleDamage] : DamageTypes)
-	{
-		UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, Tag, ScaleDamage.GetValueAtLevel(GetAbilityLevel()));
-
-		Projectile->DamageEffectSpecHandle = SpecHandle;
-		// 后续ApplyEffect在Projectile类OnSphereOverlap中
-		Projectile->FinishSpawning(SpawnTransform);
-	}
 }
