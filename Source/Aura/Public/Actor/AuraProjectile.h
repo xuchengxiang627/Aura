@@ -45,6 +45,8 @@ public:
 	UPROPERTY(BlueprintReadWrite, meta = (ExposeOnSpawn=true))
 	FDamageEffectParams DamageEffectParams;
 
+	UPROPERTY()
+	TObjectPtr<USceneComponent> HomingTargetSceneComponent; // 用于投射物的目标追踪
 protected:
 	virtual void BeginPlay() override;
 	UFUNCTION()
