@@ -33,6 +33,8 @@ AAuraEnemy::AAuraEnemy()
 	bUseControllerRotationRoll = false;
 	// GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
+
+	BaseWalkSpeed = 250.f;
 }
 
 void AAuraEnemy::HighlightActor()
@@ -83,6 +85,15 @@ AActor* AAuraEnemy::GetCombatTarget_Implementation()
 	return CombatTarget;
 }
 
+void AAuraEnemy::StunTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	Super::StunTagChanged(Tag, NewCount);
+	if (AuraAIController && AuraAIController->GetBlackboardComponent())
+	{
+		AuraAIController->GetBlackboardComponent()->SetValueAsBool(FName("Stunned"), bIsStunned);
+	}
+}
+
 void AAuraEnemy::BeginPlay()
 {
 	Super::BeginPlay();
@@ -112,6 +123,7 @@ void AAuraEnemy::BeginPlay()
 			});
 
 			AbilitySystemComponent->RegisterGameplayTagEvent(FAuraGameplayTags::Get().Effects_HitReact).AddUObject(this, &AAuraEnemy::HitReactTagChanged);
+			AbilitySystemComponent->RegisterGameplayTagEvent(FAuraGameplayTags::Get().DeBuff_Stun).AddUObject(this, &AAuraEnemy::StunTagChanged);
 
 			OnHealthChanged.Broadcast(AuraAttributeSet->GetHealth());
 			OnMaxHealthChanged.Broadcast(AuraAttributeSet->GetMaxHealth());

@@ -205,7 +205,14 @@ void UAuraAttributeSet::DeBuff(const FEffectProperties& EffectProperties)
 	// 新代码（使用 UTargetTagsGameplayEffectComponent）
 	UTargetTagsGameplayEffectComponent& TargetTagsComponent = DeBuffEffect->FindOrAddComponent<UTargetTagsGameplayEffectComponent>();
 	FInheritedTagContainer TagContainer;
-	TagContainer.AddTag(FAuraGameplayTags::Get().DamageTypesToDeBuffs[DamageType]);
+	const FGameplayTag DeBuffTag = FAuraGameplayTags::Get().DamageTypesToDeBuffs[DamageType];
+	TagContainer.AddTag(DeBuffTag);
+	if (DeBuffTag == FAuraGameplayTags::Get().DeBuff_Stun)
+	{
+		TagContainer.AddTag(FAuraGameplayTags::Get().Player_Block_CursorTrace);
+		TagContainer.AddTag(FAuraGameplayTags::Get().Player_Block_InputHeld);
+		TagContainer.AddTag(FAuraGameplayTags::Get().Player_Block_InputPressed);
+	}
 	TargetTagsComponent.SetAndApplyTargetTagChanges(TagContainer); // 设置目标标签
 
 	// 堆叠策略
@@ -289,10 +296,14 @@ void UAuraAttributeSet::HandleIncomingDamage(const FEffectProperties& EffectProp
 
 		if (const bool bFatal = NewHealth <= 0.f; !bFatal)
 		{
-			FGameplayTagContainer TagContainer;
-			TagContainer.AddTag(FAuraGameplayTags::Get().Effects_HitReact);
-			// 激活带Effects_HitReact标签的 ability
-			EffectProperties.TargetASC->TryActivateAbilitiesByTag(TagContainer);
+			if (EffectProperties.TargetAvatarActor->Implements<UCombatInterface>() &&
+				!ICombatInterface::Execute_IsBeingShocked(EffectProperties.TargetAvatarActor))
+			{
+				FGameplayTagContainer TagContainer;
+				TagContainer.AddTag(FAuraGameplayTags::Get().Effects_HitReact);
+				// 激活带Effects_HitReact标签的 ability
+				EffectProperties.TargetASC->TryActivateAbilitiesByTag(TagContainer);
+			}
 
 			const FVector KnockBackForce = UAuraAbilitySystemLibrary::GetKnockBackForce(EffectProperties.EffectContextHandle);
 			if (!KnockBackForce.IsNearlyZero(1.f))

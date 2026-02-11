@@ -10,7 +10,9 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "AuraGameplayTags.h"
 #include "AbilitySystem/DeBuff/DeBuffNiagaraComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AAuraCharacterBase::AAuraCharacterBase()
@@ -28,6 +30,10 @@ AAuraCharacterBase::AAuraCharacterBase()
 	BurnDeBuffComponent = CreateDefaultSubobject<UDeBuffNiagaraComponent>(TEXT("BurnDeBuffComponent"));
 	BurnDeBuffComponent->SetupAttachment(RootComponent);
 	BurnDeBuffComponent->DeBuffTag = FAuraGameplayTags::Get().DeBuff_Burn;
+
+	StunDeBuffComponent = CreateDefaultSubobject<UDeBuffNiagaraComponent>(TEXT("StunDeBuffComponent"));
+	StunDeBuffComponent->SetupAttachment(RootComponent);
+	StunDeBuffComponent->DeBuffTag = FAuraGameplayTags::Get().DeBuff_Stun;
 }
 
 UAbilitySystemComponent* AAuraCharacterBase::GetAbilitySystemComponent() const
@@ -83,6 +89,16 @@ ECharacterClass AAuraCharacterBase::GetCharacterClass_Implementation()
 	return CharacterClass;
 }
 
+USkeletalMeshComponent* AAuraCharacterBase::GetWeapon_Implementation()
+{
+	return Weapon;
+}
+
+void AAuraCharacterBase::SetIsBeingShocked_Implementation(bool bInBeingShocked)
+{
+	bIsBeingShocked = bInBeingShocked;
+}
+
 void AAuraCharacterBase::MulticastHandleDeath_Implementation(const FVector& DeathImpulse)
 {
 	if (IsValid(DeathSound))
@@ -107,11 +123,33 @@ void AAuraCharacterBase::MulticastHandleDeath_Implementation(const FVector& Deat
 	OnDeath.Broadcast(this);
 }
 
+void AAuraCharacterBase::StunTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	bIsStunned = NewCount > 0;
+	GetCharacterMovement()->MaxWalkSpeed = bIsStunned ? 0.f : BaseWalkSpeed;
+}
+
+void AAuraCharacterBase::OnRep_Stunned()
+{
+}
+
+void AAuraCharacterBase::OnRep_Burned()
+{
+}
+
 // Called when the game starts or when spawned
 void AAuraCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
+}
+
+void AAuraCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AAuraCharacterBase, bIsStunned);
+	DOREPLIFETIME(AAuraCharacterBase, bIsBurned);
+	DOREPLIFETIME(AAuraCharacterBase, bIsBeingShocked);
 }
 
 FVector AAuraCharacterBase::GetCombatSocketLocation_Implementation(const FGameplayTag& MontageTag)

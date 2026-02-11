@@ -48,6 +48,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effects")
 	TObjectPtr<UNiagaraComponent> LeveUpNiagaraComponent;
+
+	virtual void OnRep_Stunned() override;
+	virtual void OnRep_Burned() override;
 private:
 	virtual void InitAbilityActorInfo() override;
 

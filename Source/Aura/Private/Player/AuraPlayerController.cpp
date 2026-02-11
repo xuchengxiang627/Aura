@@ -13,6 +13,7 @@
 #include "InputAction.h"
 #include "NavigationPath.h"
 #include "NavigationSystem.h"
+#include "NiagaraFunctionLibrary.h"
 #include "AbilitySystem/AuraAbilitySystemComponent.h"
 #include "Components/SplineComponent.h"
 #include "GameFramework/Character.h"
@@ -103,6 +104,11 @@ void AAuraPlayerController::SetupInputComponent()
 
 void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 {
+	if (GetAuraAbilitySystemComponent() &&
+		GetAuraAbilitySystemComponent()->HasMatchingGameplayTag(FAuraGameplayTags::Get().Player_Block_InputPressed))
+	{
+		return;
+	}
 	const FVector2D InputAxisVector = InputActionValue.Get<FVector2D>();
 	const FRotator Rotator = GetControlRotation();
 	const FRotator YawRotator(0.f, Rotator.Yaw, 0.f);
@@ -118,6 +124,15 @@ void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 
 void AAuraPlayerController::CursorTrace()
 {
+	if (GetAuraAbilitySystemComponent() &&
+		GetAuraAbilitySystemComponent()->HasMatchingGameplayTag(FAuraGameplayTags::Get().Player_Block_CursorTrace))
+	{
+		if (ThisActor) ThisActor->UnHighlightActor();
+		if (LastActor) LastActor->UnHighlightActor();
+		ThisActor = nullptr;
+		LastActor = nullptr;
+		return;
+	}
 	GetHitResultUnderCursor(ECC_Visibility, false, HitResult);
 	if (!HitResult.bBlockingHit)
 	{
@@ -149,6 +164,11 @@ void AAuraPlayerController::CursorTrace()
 
 void AAuraPlayerController::AbilityInputTagPressed(FGameplayTag InputTag)
 {
+	if (GetAuraAbilitySystemComponent() &&
+		GetAuraAbilitySystemComponent()->HasMatchingGameplayTag(FAuraGameplayTags::Get().Player_Block_InputPressed))
+	{
+		return;
+	}
 	if (InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB))
 	{
 		// 当命中的对象存在时，即有高亮敌人时，标记有目
@@ -156,12 +176,20 @@ void AAuraPlayerController::AbilityInputTagPressed(FGameplayTag InputTag)
 		// 此时还不知道是否自动移动
 		bAutoRunning = false;
 	}
-
+	if (GetAuraAbilitySystemComponent())
+	{
+		GetAuraAbilitySystemComponent()->AbilityInputTagPressed(InputTag);
+	}
 	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, *InputTag.ToString());
 }
 
 void AAuraPlayerController::AbilityInputTagReleased(FGameplayTag InputTag)
 {
+	if (GetAuraAbilitySystemComponent() &&
+		GetAuraAbilitySystemComponent()->HasMatchingGameplayTag(FAuraGameplayTags::Get().Player_Block_InputReleased))
+	{
+		return;
+	}
 	if (!InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB))
 	{
 		if (GetAuraAbilitySystemComponent() == nullptr) return;
@@ -192,6 +220,11 @@ void AAuraPlayerController::AbilityInputTagReleased(FGameplayTag InputTag)
 					bAutoRunning = true; // 此时有了样条点可以自动移动
 				}
 			}
+			if (GetAuraAbilitySystemComponent() &&
+				!GetAuraAbilitySystemComponent()->HasMatchingGameplayTag(FAuraGameplayTags::Get().Player_Block_InputPressed))
+			{
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ClickNiagaraSystem, CachedDestination);
+			}
 		}
 		FollowTime = 0.f;
 	}
@@ -200,6 +233,11 @@ void AAuraPlayerController::AbilityInputTagReleased(FGameplayTag InputTag)
 
 void AAuraPlayerController::AbilityInputHeld(FGameplayTag InputTag)
 {
+	if (GetAuraAbilitySystemComponent() &&
+		GetAuraAbilitySystemComponent()->HasMatchingGameplayTag(FAuraGameplayTags::Get().Player_Block_InputHeld))
+	{
+		return;
+	}
 	// 输入标签不是左键
 	if (!InputTag.MatchesTagExact(FAuraGameplayTags::Get().InputTag_LMB))
 	{

@@ -36,7 +36,7 @@ void UDeBuffNiagaraComponent::BeginPlay()
 
 void UDeBuffNiagaraComponent::DeBuffTagChanged(const FGameplayTag CallbackTag, int32 NewCount)
 {
-	if (NewCount > 0)
+	if (NewCount > 0 && !ICombatInterface::Execute_IsDead(GetOwner()))
 	{
 		Activate();
 	}

@@ -4,9 +4,11 @@
 #include "Character/AuraCharacter.h"
 
 #include "AbilitySystemComponent.h"
+#include "AuraGameplayTags.h"
 #include "NiagaraComponent.h"
 #include "AbilitySystem/AuraAbilitySystemComponent.h"
 #include "AbilitySystem/Data/LevelUpInfo.h"
+#include "AbilitySystem/DeBuff/DeBuffNiagaraComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -164,6 +166,40 @@ int32 AAuraCharacter::GetSpellPoints_Implementation() const
 	return 0;
 }
 
+void AAuraCharacter::OnRep_Stunned()
+{
+	if (UAuraAbilitySystemComponent* ASC = Cast<UAuraAbilitySystemComponent>(AbilitySystemComponent))
+	{
+		FGameplayTagContainer BlockTags;
+		BlockTags.AddTag(FAuraGameplayTags::Get().Player_Block_CursorTrace);
+		BlockTags.AddTag(FAuraGameplayTags::Get().Player_Block_InputPressed);
+		BlockTags.AddTag(FAuraGameplayTags::Get().Player_Block_InputHeld);
+		BlockTags.AddTag(FAuraGameplayTags::Get().Player_Block_InputReleased);
+		if (bIsStunned)
+		{
+			ASC->AddLooseGameplayTags(BlockTags);
+			StunDeBuffComponent->Activate();
+		}
+		else
+		{
+			ASC->RemoveLooseGameplayTags(BlockTags);
+			StunDeBuffComponent->Deactivate();
+		}
+	}
+}
+
+void AAuraCharacter::OnRep_Burned()
+{
+	if (bIsBurned)
+	{
+		BurnDeBuffComponent->Activate();
+	}
+	else
+	{
+		BurnDeBuffComponent->Deactivate();
+	}
+}
+
 void AAuraCharacter::InitAbilityActorInfo()
 {
 	if (AAuraPlayerState* PS = GetPlayerState<AAuraPlayerState>())
@@ -175,6 +211,9 @@ void AAuraCharacter::InitAbilityActorInfo()
 		AbilitySystemComponent = PS->GetAbilitySystemComponent();
 		AttributeSet = PS->GetAttributeSet();
 		OnASCRegistered.Broadcast(AbilitySystemComponent);
+
+		AbilitySystemComponent->RegisterGameplayTagEvent(FAuraGameplayTags::Get().DeBuff_Stun).AddUObject(this, &AAuraCharacter::StunTagChanged);
+
 		// 添加界面
 		if (AAuraPlayerController* PC = GetController<AAuraPlayerController>())
 		{

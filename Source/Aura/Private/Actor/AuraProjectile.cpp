@@ -47,6 +47,7 @@ void AAuraProjectile::BeginPlay()
 void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (DamageEffectParams.SourceAbilitySystemComponent ==  nullptr) return;
 	AActor* AvatarActor = DamageEffectParams.SourceAbilitySystemComponent->GetAvatarActor();
 	if (OtherActor == AvatarActor || !UAuraAbilitySystemLibrary::IsNotFriend(AvatarActor, OtherActor))
 	{

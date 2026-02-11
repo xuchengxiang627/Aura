@@ -24,6 +24,7 @@ public:
 	AAuraCharacterBase();
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UAttributeSet* GetAttributeSet() const { return AttributeSet;}
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** ICombatInterface*/
 	virtual FVector GetCombatSocketLocation_Implementation(const FGameplayTag& MontageTag) override;
@@ -39,6 +40,9 @@ public:
 	virtual ECharacterClass GetCharacterClass_Implementation() override;
 	virtual FOnASCRegistered& GetOnASCRegisteredDelegate() override { return OnASCRegistered;}
 	virtual FOnDeath& GetOnDeathDelegate() override { return OnDeath;}
+	virtual USkeletalMeshComponent* GetWeapon_Implementation() override;
+	virtual void SetIsBeingShocked_Implementation(bool bInBeingShocked) override;
+	virtual bool IsBeingShocked_Implementation() const override { return bIsBeingShocked;}
 	/** ICombatInterface*/
 	FOnASCRegistered OnASCRegistered;
 	FOnDeath OnDeath;
@@ -48,6 +52,22 @@ public:
 
 	UPROPERTY(EditAnywhere, Category="Combat")
 	TArray<FTaggedMontage> AttackMontages;
+
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	bool bIsBeingShocked = false;
+	UPROPERTY(ReplicatedUsing=OnRep_Stunned, BlueprintReadOnly)
+	bool bIsStunned = false;
+	UPROPERTY(ReplicatedUsing=OnRep_Burned, BlueprintReadOnly)
+	bool bIsBurned = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+	float BaseWalkSpeed = 600.f;
+
+	virtual void StunTagChanged(const FGameplayTag Tag, int32 NewCount);
+	UFUNCTION()
+	virtual void OnRep_Stunned();
+	UFUNCTION()
+	virtual void OnRep_Burned();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -115,6 +135,8 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UDeBuffNiagaraComponent> BurnDeBuffComponent;
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UDeBuffNiagaraComponent> StunDeBuffComponent;
 private:
 	UPROPERTY(EditAnywhere, Category="Abilities")
 	TArray<TSubclassOf<UGameplayAbility>> StartupAbilities;
