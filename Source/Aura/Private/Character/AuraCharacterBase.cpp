@@ -10,6 +10,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "AuraGameplayTags.h"
 #include "AbilitySystem/DeBuff/DeBuffNiagaraComponent.h"
+#include "AbilitySystem/Passive/PassiveNiagaraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
@@ -17,7 +18,7 @@
 // Sets default values
 AAuraCharacterBase::AAuraCharacterBase()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Projectile, ECR_Overlap);
 	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
@@ -34,6 +35,27 @@ AAuraCharacterBase::AAuraCharacterBase()
 	StunDeBuffComponent = CreateDefaultSubobject<UDeBuffNiagaraComponent>(TEXT("StunDeBuffComponent"));
 	StunDeBuffComponent->SetupAttachment(RootComponent);
 	StunDeBuffComponent->DeBuffTag = FAuraGameplayTags::Get().DeBuff_Stun;
+
+	EffectAttachComponent = CreateDefaultSubobject<USceneComponent>(TEXT("EffectAttachComponent"));
+	EffectAttachComponent->SetupAttachment(RootComponent);
+
+	HaloOfProtectionNiagaraComponent = CreateDefaultSubobject<UPassiveNiagaraComponent>(TEXT("HaloOfProtectionNiagaraComponent"));
+	HaloOfProtectionNiagaraComponent->SetupAttachment(EffectAttachComponent);
+	HaloOfProtectionNiagaraComponent->PassiveSpellTag = FAuraGameplayTags::Get().Abilities_Passive_HaloOfProtection;
+
+	LifeSiphonNiagaraComponent = CreateDefaultSubobject<UPassiveNiagaraComponent>(TEXT("LifeSiphonNiagaraComponent"));
+	LifeSiphonNiagaraComponent->SetupAttachment(EffectAttachComponent);
+	LifeSiphonNiagaraComponent->PassiveSpellTag = FAuraGameplayTags::Get().Abilities_Passive_LifeSiphon;
+
+	ManaSiphonNiagaraComponent = CreateDefaultSubobject<UPassiveNiagaraComponent>(TEXT("ManaSiphonNiagaraComponent"));
+	ManaSiphonNiagaraComponent->SetupAttachment(EffectAttachComponent);
+	ManaSiphonNiagaraComponent->PassiveSpellTag = FAuraGameplayTags::Get().Abilities_Passive_ManaSiphon;
+}
+
+void AAuraCharacterBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	EffectAttachComponent->SetWorldRotation(FRotator::ZeroRotator);
 }
 
 UAbilitySystemComponent* AAuraCharacterBase::GetAbilitySystemComponent() const

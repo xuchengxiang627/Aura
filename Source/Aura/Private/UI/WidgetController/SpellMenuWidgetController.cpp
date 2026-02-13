@@ -43,6 +43,7 @@ void USpellMenuWidgetController::BindCallbacksToDependencies()
 
 		CurrentSpellPoints = NewPoints;
 		bool bSpendPointsButtonEnabled, bEquipButtonEnabled;
+		SelectedAbility.Status = AuraASC->GetStatusFromAbilityTag(SelectedAbility.Ability);
 		ShouldEnableButtons(SelectedAbility.Status, CurrentSpellPoints, bSpendPointsButtonEnabled, bEquipButtonEnabled);
 		FString Description, NextLevelDescription;
 		AuraASC->GetDescriptionsByAbilityTag(SelectedAbility.Ability, Description, NextLevelDescription);
