@@ -9,6 +9,7 @@
 #include "AbilitySystem/AuraAttributeSet.h"
 #include "AbilitySystem/Data/CharacterClassInfo.h"
 #include "Interaction/CombatInterface.h"
+#include "Kismet/GameplayStatics.h"
 
 struct AuraDamageStatics
 {
@@ -135,6 +136,30 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 			DamageTypeValue = (100.f - Resistance) / 100.f * DamageTypeValue;
 		}
 		Damage += DamageTypeValue;
+	}
+	//  radial damage
+	if (UAuraAbilitySystemLibrary::IsRadialDamage(EffectSpec.GetContext()))
+	{
+		if (TargetCombatInterface)
+		{
+			TargetCombatInterface->GetOnDamageSignature().AddLambda([&](float InDamage)
+			{
+				Damage = InDamage;
+			});
+		}
+		UGameplayStatics::ApplyRadialDamageWithFalloff(
+			TargetAvatarActor,
+			Damage,
+			0.f,
+			UAuraAbilitySystemLibrary::GetRadialDamageOrigin(EffectSpec.GetContext()),
+			UAuraAbilitySystemLibrary::GetRadialDamageInnerRadius(EffectSpec.GetContext()),
+			UAuraAbilitySystemLibrary::GetRadialDamageOuterRadius(EffectSpec.GetContext()),
+			1.f,
+			UDamageType::StaticClass(),
+			TArray<AActor*>{},
+			SourceAvatarActor,
+			nullptr
+		);
 	}
 
 	// 是否被block

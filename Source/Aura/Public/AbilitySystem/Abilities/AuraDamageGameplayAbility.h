@@ -20,7 +20,10 @@ public:
 	void CauseDamage(AActor* TargetActor);
 
 	UFUNCTION(BlueprintPure)
-	FDamageEffectParams MakeDamageEffectParamsFromClassDefaults(AActor* TargetActor = nullptr) const;
+	FDamageEffectParams MakeDamageEffectParamsFromClassDefaults(AActor* TargetActor = nullptr, const FVector InRadialDamageOrigin = FVector::ZeroVector,
+		bool bOverrideKnockBackDirection = false, const FVector KnockBackDirectionOverride = FVector::ZeroVector,
+		bool bOverrideDeathImpulseDirection = false, const FVector DeathImpulseDirectionOverride = FVector::ZeroVector,
+		bool bOverridePitch = false, float PitchOverride = 0.f) const;
 
 	UFUNCTION(BlueprintPure)
 	float GetDamageAtLevel() const;
@@ -48,4 +51,13 @@ protected:
 	float KnockBackForceMagnitude = 600.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Damage")
 	float KnockBackChance = 40.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Damage")
+	bool bIsRadialDamage = false;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Damage")
+	float RadialDamageInnerRadius = 0.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Damage")
+	float RadialDamageOuterRadius = 0.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Damage")
+	FVector RadialDamageOrigin = FVector::ZeroVector;
 };
