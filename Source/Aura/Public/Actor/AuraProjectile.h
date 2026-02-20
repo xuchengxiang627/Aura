@@ -49,8 +49,11 @@ public:
 	TObjectPtr<USceneComponent> HomingTargetSceneComponent; // 用于投射物的目标追踪
 protected:
 	virtual void BeginPlay() override;
+	UFUNCTION(BlueprintCallable)
+	void OnHit();
+	bool IsValidOverlap(AActor* OtherActor);
 	UFUNCTION()
-	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	virtual void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	virtual void Destroyed() override;
 };

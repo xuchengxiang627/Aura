@@ -362,6 +362,34 @@ void UAuraAbilitySystemLibrary::SetRadialDamageOrigin(FGameplayEffectContextHand
 	}
 }
 
+void UAuraAbilitySystemLibrary::SetIsRadialDamageEffectParam(FDamageEffectParams& DamageEffectParams, bool bIsRadial, float InnerRadius, float OuterRadius, FVector Origin)
+{
+	DamageEffectParams.bIsRadialDamage = bIsRadial;
+	DamageEffectParams.RadialDamageInnerRadius = InnerRadius;
+	DamageEffectParams.RadialDamageOuterRadius = OuterRadius;
+	DamageEffectParams.RadialDamageOrigin = Origin;
+}
+
+void UAuraAbilitySystemLibrary::SetKnockBackDirection(FDamageEffectParams& DamageEffectParams,
+	FVector KnockBackDirection, float Magnitude)
+{
+	KnockBackDirection.Normalize();
+	DamageEffectParams.KnockBackForce = KnockBackDirection * (Magnitude != 0.f ? Magnitude : DamageEffectParams.KnockBackForceMagnitude);
+}
+
+void UAuraAbilitySystemLibrary::SetDeathImpulseDirection(FDamageEffectParams& DamageEffectParams,
+	FVector DeathImpulseDirection, float Magnitude)
+{
+	DeathImpulseDirection.Normalize();
+	DamageEffectParams.DeathImpulse = DeathImpulseDirection * (Magnitude != 0.f ? Magnitude : DamageEffectParams.DeathImpulseMagnitude);
+}
+
+void UAuraAbilitySystemLibrary::SetTargetASCEffectParam(FDamageEffectParams& DamageEffectParams,
+	UAbilitySystemComponent* TargetASC)
+{
+	DamageEffectParams.TargetAbilitySystemComponent = TargetASC;
+}
+
 void UAuraAbilitySystemLibrary::GetLivePlayersWithRadius(const UObject* WorldContextObject,
                                                          TArray<AActor*>& OutOverlappingActors, const TArray<AActor*>& ActorsToIgnore, float Radius,
                                                          const FVector& SphereOrigin)
