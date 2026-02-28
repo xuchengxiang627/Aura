@@ -28,6 +28,10 @@ public:
 	ULoadScreenSaveGame* GetSaveSlotData(const FString& SlotName, int32 SlotIndex);
 	static bool DeleteSlot(const FString& SlotName, int32 SlotIndex);
 	void TravelToMap(UMVVM_LoadSlot* LoadSlot);
+	ULoadScreenSaveGame* RetrieveInGameSaveData(); // 获取当前游戏保存数据
+	void SaveInGameProgressData(ULoadScreenSaveGame* SaveGame);
+	void SaveWorldState(UWorld* World);
+	void LoadWorldState(UWorld* World) const;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<USaveGame> LoadScreenSaveGameClass;
@@ -36,9 +40,13 @@ public:
 	FString DefaultMapName;
 	UPROPERTY(EditDefaultsOnly)
 	TSoftObjectPtr<UWorld> DefaultMap;
-
 	UPROPERTY(EditDefaultsOnly)
 	TMap<FString, TSoftObjectPtr<UWorld>> Maps;
+
+	UPROPERTY(EditDefaultsOnly)
+	FName DefaultPlayerStartTag;
+
+	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 protected:
 	virtual void BeginPlay() override;
 };

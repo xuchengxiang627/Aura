@@ -3,6 +3,7 @@
 
 #include "UI/ViewModel/MVVM_LoadScreen.h"
 
+#include "Game/AuraGameInstance.h"
 #include "Game/AuraGameModeBase.h"
 #include "Game/LoadScreenSaveGame.h"
 #include "Kismet/GameplayStatics.h"
@@ -39,9 +40,16 @@ void UMVVM_LoadScreen::NewSlotButtonPressed(int32 Slot, FString& EnterName)
 	AAuraGameModeBase* AuraGameModeBase = Cast<AAuraGameModeBase>(UGameplayStatics::GetGameMode(this));
 	LoadSlots[Slot]->SetPlayerName(EnterName);
 	LoadSlots[Slot]->SetMapName(AuraGameModeBase->DefaultMapName);
+	LoadSlots[Slot]->SetPlayerLevel(1);
 	LoadSlots[Slot]->SlotStatus = ESaveSlotStatus::Taken;
+	LoadSlots[Slot]->PlayerStartTag = AuraGameModeBase->DefaultPlayerStartTag;
 	AuraGameModeBase->SaveSlotData(LoadSlots[Slot], Slot);
 	LoadSlots[Slot]->SetWidgetSwitcherIndex.Broadcast(2);
+
+	UAuraGameInstance* AuraGameInstance = Cast<UAuraGameInstance>(AuraGameModeBase->GetGameInstance());
+	AuraGameInstance->LoadSlotName = LoadSlots[Slot]->LoadSlotName;
+	AuraGameInstance->LoadSlotIndex = Slot;
+	AuraGameInstance->PlayerStartTag = AuraGameModeBase->DefaultPlayerStartTag;
 }
 
 void UMVVM_LoadScreen::NewGameButtonPressed(int32 Slot)
@@ -75,6 +83,10 @@ void UMVVM_LoadScreen::PlayButtonPressed()
 {
 	if (!IsValid(SelectedSlot)) return;
 	AAuraGameModeBase* AuraGameModeBase = Cast<AAuraGameModeBase>(UGameplayStatics::GetGameMode(this));
+	UAuraGameInstance* AuraGameInstance = Cast<UAuraGameInstance>(AuraGameModeBase->GetGameInstance());
+	AuraGameInstance->PlayerStartTag = SelectedSlot->PlayerStartTag;
+	AuraGameInstance->LoadSlotName = SelectedSlot->LoadSlotName;
+	AuraGameInstance->LoadSlotIndex = SelectedSlot->SlotIndex;
 	AuraGameModeBase->TravelToMap(SelectedSlot);
 	SelectedSlot = nullptr;
 }
@@ -90,6 +102,8 @@ void UMVVM_LoadScreen::LoadData()
 			LoadSlot->SlotStatus = LoadScreenSaveGame->SaveSlotStatus;
 			LoadSlot->SetPlayerName(LoadScreenSaveGame->PlayerName);
 			LoadSlot->SetMapName(LoadScreenSaveGame->MapName);
+			LoadSlot->SetPlayerLevel(LoadScreenSaveGame->Level);
+			LoadSlot->PlayerStartTag = LoadScreenSaveGame->PlayerStartTag;
 			LoadSlot->InitializeSlot();
 		}
 	}

@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "AuraAbilitySystemComponent.generated.h"
 
+class ULoadScreenSaveGame;
 class UAuraAbilitySystemComponent;
 DECLARE_MULTICAST_DELEGATE_OneParam(FEffectAssetTags, const FGameplayTagContainer& /*AssetTags*/);
 DECLARE_MULTICAST_DELEGATE(FAbilityGiven);
@@ -37,6 +38,7 @@ public:
 
 	void AddCharacterAbilities(TArray<TSubclassOf<UGameplayAbility>> StartupAbilities);
 	void AddCharacterPassiveAbilities(TArray<TSubclassOf<UGameplayAbility>> StartupPassiveAbilities);
+	void AddCharacterAbilitiesFromSaveData(ULoadScreenSaveGame* SaveGame);
 	virtual void OnRep_ActivateAbilities() override;
 
 	void AbilityInputTagPressed(const FGameplayTag& InputTag);
@@ -47,6 +49,7 @@ public:
 	static FGameplayTag GetAbilityTagFromSpec(const FGameplayAbilitySpec& AbilitySpec);
 	static FGameplayTag GetInputTagFromSpec(const FGameplayAbilitySpec& AbilitySpec);
 	static FGameplayTag GetAbilityStatusTagFromSpec(const FGameplayAbilitySpec& AbilitySpec);
+	static FGameplayTag GetAbilityTypeFromSpec(const FGameplayAbilitySpec& AbilitySpec);
 	FGameplayTag GetStatusFromAbilityTag(const FGameplayTag& AttributeTag);
 	FGameplayTag GetInputTagFromAbilityTag(const FGameplayTag& AttributeTag);
 	bool SlotIsEmpty(const FGameplayTag& Slot);

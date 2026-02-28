@@ -4,7 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
+#include "GameplayTagContainer.h"
 #include "LoadScreenSaveGame.generated.h"
+
+class UGameplayAbility;
 
 UENUM()
 enum ESaveSlotStatus: int8
@@ -12,6 +15,57 @@ enum ESaveSlotStatus: int8
 	Vacant,
 	EnterName,
 	Taken
+};
+
+USTRUCT(BlueprintType)
+struct FSavedAbility
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="ClassDefaults")
+	TSubclassOf<UGameplayAbility> GameplayAbility;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FGameplayTag AbilityTag = FGameplayTag();
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FGameplayTag AbilityStatus = FGameplayTag();
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FGameplayTag AbilitySlot = FGameplayTag();
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FGameplayTag AbilityType = FGameplayTag();
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	int32 AbilityLevel = 0;
+
+	bool operator==(const FSavedAbility &Other) const
+	{
+		return AbilityTag == Other.AbilityTag;
+	}
+};
+
+USTRUCT()
+struct FSavedActor
+{
+	GENERATED_BODY()
+	UPROPERTY()
+	FName ActorName = FName();
+	UPROPERTY()
+	FTransform Transform = FTransform();
+	UPROPERTY()
+	TArray<uint8> Bytes;
+
+	bool operator==(const FSavedActor &Other) const
+	{
+		return ActorName == Other.ActorName;
+	}
+};
+
+USTRUCT()
+struct FSavedMap
+{
+	GENERATED_BODY()
+	UPROPERTY()
+	FString MapAssetName = FString();
+	UPROPERTY()
+	TArray<FSavedActor> SavedActors;
 };
 /**
  * 
@@ -31,4 +85,40 @@ public:
 	FString MapName = FString("Default Map");
 	UPROPERTY()
 	TEnumAsByte<ESaveSlotStatus> SaveSlotStatus = Vacant;
+	UPROPERTY()
+	FName PlayerStartTag;
+
+	UPROPERTY()
+	bool bFirstTimeLoadIn = true;
+
+	/** Player State*/
+	UPROPERTY()
+	int32 Level = 1;
+	UPROPERTY()
+	int32 XP = 0;
+	UPROPERTY()
+	int32 AttributePoints = 0;
+	UPROPERTY()
+	int32 SpellPoints = 0;
+
+	UPROPERTY()
+	float Strength = 0.f;
+	UPROPERTY()
+	float Intelligence = 0.f; // 智力
+	UPROPERTY()
+	float Resilience = 0.f; // 韧性
+	UPROPERTY()
+	float Vigor = 0.f; // 活力
+	UPROPERTY()
+	float Health = 0.f;
+	UPROPERTY()
+	float Mana = 0.f;
+
+	UPROPERTY()
+	TArray<FSavedAbility> SavedAbilities;
+	UPROPERTY()
+	TArray<FSavedMap> SavedMaps;
+
+	FSavedMap GetSavedMapWithMapName(const FString& InMapName);
+	bool HasMap(const FString& InMapName);
 };

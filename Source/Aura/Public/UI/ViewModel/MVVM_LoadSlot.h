@@ -20,6 +20,8 @@ class AURA_API UMVVM_LoadSlot : public UMVVMViewModelBase
     FString PlayerName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, FieldNotify, Setter, Getter, meta=(AllowPrivateAccess="true"))
     FString MapName;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, FieldNotify, Setter, Getter, meta=(AllowPrivateAccess="true"))
+	int32 PlayerLevel;
 
 public:
 	UPROPERTY(BlueprintAssignable)
@@ -35,9 +37,13 @@ public:
 	int32 SlotIndex;
 	UPROPERTY()
 	TEnumAsByte<ESaveSlotStatus> SlotStatus;
+	UPROPERTY()
+	FName PlayerStartTag;
 
 	void SetPlayerName(const FString& NewPlayerName);
 	void SetMapName(const FString& NewMapName);
+	void SetPlayerLevel(int32 NewPlayerLevel);
 	FString GetPlayerName() const { return PlayerName;}
 	FString GetMapName() const { return MapName;}
+	int32 GetPlayerLevel() const { return PlayerLevel;}
 };

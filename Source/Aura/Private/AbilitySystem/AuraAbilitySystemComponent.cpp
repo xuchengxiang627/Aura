@@ -9,6 +9,7 @@
 #include "AbilitySystem/Abilities/AuraGameplayAbility.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "Aura/AuraLogChannels.h"
+#include "Game/LoadScreenSaveGame.h"
 #include "Interaction/PlayerInterface.h"
 
 void UAuraAbilitySystemComponent::AbilityActorInfoSet()
@@ -28,6 +29,7 @@ void UAuraAbilitySystemComponent::AddCharacterAbilities(TArray<TSubclassOf<UGame
 		{
 			AbilitySpec.DynamicAbilityTags.AddTag(AuraAbility->StartupInputTag);
 			AbilitySpec.DynamicAbilityTags.AddTag(FAuraGameplayTags::Get().Abilities_Status_Equipped);
+			AbilitySpec.DynamicAbilityTags.AddTag(FAuraGameplayTags::Get().Abilities_Type_Offensive);
 			GiveAbility(AbilitySpec); // 仅授予技能，不自动激活
 		}
 		// GiveAbilityAndActivateOnce(AbilitySpec); // 授予技能并立即激活一次，激活后该能力会被移除
@@ -41,8 +43,42 @@ void UAuraAbilitySystemComponent::AddCharacterPassiveAbilities(TArray<TSubclassO
 	for (const auto Ability : StartupPassiveAbilities)
 	{
 		FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(Ability, 1);
+		AbilitySpec.DynamicAbilityTags.AddTag(FAuraGameplayTags::Get().Abilities_Status_Equipped);
+		AbilitySpec.DynamicAbilityTags.AddTag(FAuraGameplayTags::Get().Abilities_Type_Passive);
 		GiveAbilityAndActivateOnce(AbilitySpec);
 	}
+}
+
+void UAuraAbilitySystemComponent::AddCharacterAbilitiesFromSaveData(ULoadScreenSaveGame* SaveGame)
+{
+	for (const auto SavedAbility : SaveGame->SavedAbilities)
+	{
+		FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(SavedAbility.GameplayAbility, SavedAbility.AbilityLevel);
+
+		AbilitySpec.DynamicAbilityTags.AddTag(SavedAbility.AbilitySlot);
+		AbilitySpec.DynamicAbilityTags.AddTag(SavedAbility.AbilityStatus);
+		AbilitySpec.DynamicAbilityTags.AddTag(SavedAbility.AbilityType);
+
+		if (SavedAbility.AbilityType == FAuraGameplayTags::Get().Abilities_Type_Offensive)
+		{
+			GiveAbility(AbilitySpec);
+		} else if (SavedAbility.AbilityType == FAuraGameplayTags::Get().Abilities_Type_Passive)
+		{
+			if (SavedAbility.AbilityStatus == FAuraGameplayTags::Get().Abilities_Status_Equipped)
+			{
+				GiveAbilityAndActivateOnce(AbilitySpec);
+				// MulticastActivatePassiveEffect(SavedAbility.AbilityTag, true);
+			} else
+			{
+				GiveAbility(AbilitySpec);
+			}
+		} else
+		{
+			GiveAbilityAndActivateOnce(AbilitySpec);
+		}
+	}
+	bStartupAbilitiesGiven = true;
+	AbilityGivenDelegate.Broadcast();
 }
 
 void UAuraAbilitySystemComponent::OnRep_ActivateAbilities()
@@ -151,6 +187,18 @@ FGameplayTag UAuraAbilitySystemComponent::GetAbilityStatusTagFromSpec(const FGam
 	for (FGameplayTag Tag: AbilitySpec.DynamicAbilityTags)
 	{
 		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Abilities.Status"))))
+		{
+			return Tag;
+		}
+	}
+	return FGameplayTag();
+}
+
+FGameplayTag UAuraAbilitySystemComponent::GetAbilityTypeFromSpec(const FGameplayAbilitySpec& AbilitySpec)
+{
+	for (FGameplayTag Tag: AbilitySpec.DynamicAbilityTags)
+	{
+		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Abilities.Type"))))
 		{
 			return Tag;
 		}

@@ -46,6 +46,9 @@ public:
 	TMap<ECharacterClass, FCharacterClassDefaultInfo> CharacterClassInformation;
 	FCharacterClassDefaultInfo GetClassDefaultInfo(ECharacterClass CharacterClass) const;
 
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Class Defaults")
+	TSubclassOf<UGameplayEffect> PrimaryAttributes_SetByCaller;
+
 	// 下面两类属性都是更具Primary的属性计算得来，不同Character可以共用
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Common Class Defaults")
 	TSubclassOf<UGameplayEffect> SecondaryAttributes;

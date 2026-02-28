@@ -93,6 +93,7 @@ struct FAuraGameplayTags
 	FGameplayTag Abilities_Passive_HaloOfProtection;
 	FGameplayTag Abilities_Passive_LifeSiphon;
 	FGameplayTag Abilities_Passive_ManaSiphon;
+	FGameplayTag Abilities_Passive_ListenForEvent;
 
 	FGameplayTag Cooldown_Fire_FireBolt;
 	FGameplayTag Cooldown_Fire_FireBlast;
