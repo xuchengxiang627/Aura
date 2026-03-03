@@ -8,6 +8,7 @@
 #include "AbilitySystem/AuraAbilitySystemLibrary.h"
 #include "AbilitySystem/AuraAttributeSet.h"
 #include "AI/AuraAIController.h"
+#include "Aura/Aura.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/WidgetComponent.h"
@@ -37,7 +38,7 @@ AAuraEnemy::AAuraEnemy()
 	BaseWalkSpeed = 250.f;
 }
 
-void AAuraEnemy::HighlightActor()
+void AAuraEnemy::HighlightActor_Implementation()
 {
 	bHighLighted = true;
 	GetMesh()->SetRenderCustomDepth(true);
@@ -46,11 +47,16 @@ void AAuraEnemy::HighlightActor()
 	Weapon->SetCustomDepthStencilValue(Custom_Depth_Red);
 }
 
-void AAuraEnemy::UnHighlightActor()
+void AAuraEnemy::UnHighlightActor_Implementation()
 {
 	bHighLighted = false;
 	GetMesh()->SetRenderCustomDepth(false);
 	Weapon->SetRenderCustomDepth(false);
+}
+
+void AAuraEnemy::SetMoveToLocation_Implementation(FVector& OutDestination)
+{
+
 }
 
 int32 AAuraEnemy::GetPlayerLevel()
@@ -72,6 +78,7 @@ void AAuraEnemy::Die(const FVector& DeathImpulse)
 {
 	SetLifeSpan(LifeSpan);
 	if (AuraAIController) AuraAIController->GetBlackboardComponent()->SetValueAsBool(FName("Dead"), true);
+	SpawnLoot();
 	Super::Die(DeathImpulse);
 }
 

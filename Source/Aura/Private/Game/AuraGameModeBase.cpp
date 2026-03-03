@@ -7,6 +7,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "Game/AuraGameInstance.h"
 #include "Game/LoadScreenSaveGame.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/PlayerStart.h"
 #include "Interaction/SaveInterface.h"
 #include "Kismet/GameplayStatics.h"
@@ -25,6 +26,7 @@ void AAuraGameModeBase::SaveSlotData(UMVVM_LoadSlot* LoadSlot, int32 SlotIndex)
 	LoadScreenSaveGame->MapName = LoadSlot->GetMapName();
 	LoadScreenSaveGame->SaveSlotStatus = Taken;
 	LoadScreenSaveGame->PlayerStartTag = LoadSlot->PlayerStartTag;
+	LoadScreenSaveGame->MapAssetName = LoadSlot->MapAssetName;
 	UGameplayStatics::SaveGameToSlot(LoadScreenSaveGame, LoadSlot->LoadSlotName, SlotIndex);
 }
 
@@ -66,12 +68,19 @@ void AAuraGameModeBase::SaveInGameProgressData(ULoadScreenSaveGame* SaveGame)
 	UGameplayStatics::SaveGameToSlot(SaveGame, AuraGameInstance->LoadSlotName, AuraGameInstance->LoadSlotIndex);
 }
 
-void AAuraGameModeBase::SaveWorldState(UWorld* World)
+void AAuraGameModeBase::SaveWorldState(UWorld* World, const FString& DestinationMapAssetName)
 {
 	FString WorldName = World->GetMapName();
 	WorldName.RemoveFromStart(World->StreamingLevelsPrefix);
 	ULoadScreenSaveGame* SaveGame = RetrieveInGameSaveData();
 	if (SaveGame == nullptr) return;
+
+	if (DestinationMapAssetName != FString(""))
+	{
+		SaveGame->MapAssetName = DestinationMapAssetName;
+		SaveGame->MapName = GetMapNameFromMapAssetName(SaveGame->MapAssetName);
+	}
+
 	if (!SaveGame->HasMap(WorldName))
 	{
 		FSavedMap NewSavedMap;
@@ -142,6 +151,18 @@ void AAuraGameModeBase::LoadWorldState(UWorld* World) const
 	}
 }
 
+FString AAuraGameModeBase::GetMapNameFromMapAssetName(const FString& MapAssetName)
+{
+	for (auto& Map:  Maps)
+	{
+		if (Map.Value.GetAssetName() == MapAssetName)
+		{
+			return Map.Key;
+		}
+	}
+	return FString();
+}
+
 AActor* AAuraGameModeBase::ChoosePlayerStart_Implementation(AController* Player)
 {
 	TArray<AActor*> Actors;
@@ -164,6 +185,13 @@ AActor* AAuraGameModeBase::ChoosePlayerStart_Implementation(AController* Player)
 		}
 	}
 	return SelectedActor;
+}
+
+void AAuraGameModeBase::PlayerDied(ACharacter* DeadCharacter)
+{
+	ULoadScreenSaveGame* SaveGame = RetrieveInGameSaveData();
+	if (!IsValid(SaveGame)) return;
+	UGameplayStatics::OpenLevel(DeadCharacter, FName(SaveGame->MapAssetName));
 }
 
 void AAuraGameModeBase::BeginPlay()

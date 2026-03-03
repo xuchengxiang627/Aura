@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "EnemyInterface.generated.h"
+#include "HightLightInterface.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI, BlueprintType)
-class UEnemyInterface : public UInterface
+class UHightLightInterface : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -16,15 +16,17 @@ class UEnemyInterface : public UInterface
 /**
  * 
  */
-class AURA_API IEnemyInterface
+class AURA_API IHightLightInterface
 {
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+	UFUNCTION(BlueprintNativeEvent)
+	void HighlightActor();
+	UFUNCTION(BlueprintNativeEvent)
+	void UnHighlightActor();
 
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void SetCombatTarget(AActor* InCombatTarget);
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	AActor* GetCombatTarget();
+	UFUNCTION(BlueprintNativeEvent)
+	void SetMoveToLocation(FVector& OutDestination);
 };

@@ -6,7 +6,22 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystem/AuraAttributeSet.h"
 #include "Engine/Engine.h"
+#include "Kismet/KismetMathLibrary.h"
 
+
+void AAuraEffectActor::ItemMovement(float DeltaTime)
+{
+	if (bRotates)
+	{
+		const FRotator DeltaRotator(0.f, DeltaTime * RotationRate, 0.f);
+		CalculatedRotation = UKismetMathLibrary::ComposeRotators(CalculatedRotation, DeltaRotator);
+	}
+	if (bSinusoidalMovement)
+	{
+		const float Sine = SineAmplitude * FMath::Sin(SinePeriodConstant * RunningTime);
+		CalculatedLocation = InitialLocation + Sine * FVector::UpVector;
+	}
+}
 
 AAuraEffectActor::AAuraEffectActor()
 {
@@ -14,9 +29,36 @@ AAuraEffectActor::AAuraEffectActor()
 	SetRootComponent(CreateDefaultSubobject<USceneComponent>("SceneRoot"));
 }
 
+void AAuraEffectActor::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	RunningTime += DeltaSeconds;
+	if (RunningTime >= 2 * PI / SinePeriodConstant)
+	{
+		RunningTime = 0.f;
+	}
+	ItemMovement(DeltaSeconds);
+}
+
 void AAuraEffectActor::BeginPlay()
 {
 	Super::BeginPlay();
+	InitialLocation = GetActorLocation();
+	CalculatedLocation = GetActorLocation();
+	CalculatedRotation = GetActorRotation();
+}
+
+void AAuraEffectActor::StartSinusoidalMovement()
+{
+	bSinusoidalMovement = true;
+	InitialLocation = GetActorLocation();
+	CalculatedLocation = GetActorLocation();
+}
+
+void AAuraEffectActor::StartRotation()
+{
+	bRotates = true;
+	CalculatedRotation = GetActorRotation();
 }
 
 void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass)

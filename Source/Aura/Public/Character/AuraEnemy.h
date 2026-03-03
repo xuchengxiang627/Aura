@@ -6,6 +6,7 @@
 #include "AuraCharacterBase.h"
 #include "AbilitySystem/Data/CharacterClassInfo.h"
 #include "Interaction/EnemyInterface.h"
+#include "Interaction/HightLightInterface.h"
 #include "UI/WidgetController/OverlayWidgetController.h"
 #include "AuraEnemy.generated.h"
 
@@ -17,16 +18,17 @@ class UWidgetComponent;
  * 
  */
 UCLASS()
-class AURA_API AAuraEnemy : public AAuraCharacterBase, public IEnemyInterface
+class AURA_API AAuraEnemy : public AAuraCharacterBase, public IEnemyInterface, public IHightLightInterface
 {
 	GENERATED_BODY()
 public:
 	AAuraEnemy();
 
-	/** IEnemy Interface*/
-	virtual void HighlightActor() override;
-	virtual void UnHighlightActor() override;
-	/** IEnemy Interface*/
+	/** IHightLight Interface*/
+	virtual void HighlightActor_Implementation() override;
+	virtual void UnHighlightActor_Implementation() override;
+	virtual void SetMoveToLocation_Implementation(FVector& OutDestination) override;
+	/** IHightLight Interface*/
 
 	/** ICombat Interface*/
 	virtual int32 GetPlayerLevel() override;
@@ -51,10 +53,13 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category="Combat")
 	TObjectPtr<AActor> CombatTarget;
+	/** IEnemy Interface*/
 	virtual void SetCombatTarget_Implementation(AActor* InCombatTarget) override;
 	virtual AActor* GetCombatTarget_Implementation() override;
+	/** IEnemy Interface*/
 
 	virtual void StunTagChanged(const FGameplayTag Tag, int32 NewCount) override;
+	void SetLevel(const int32 NewLevel) { Level = NewLevel;}
 protected:
 	virtual void BeginPlay() override;
 	virtual void InitAbilityActorInfo() override;
@@ -74,7 +79,7 @@ protected:
 
 	virtual void PossessedBy(AController* NewController) override;
 
-private:
-	const int32 Custom_Depth_Red = 250;
+	UFUNCTION(BlueprintImplementableEvent)
+	void SpawnLoot();
 
 };

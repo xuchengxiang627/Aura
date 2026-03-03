@@ -30,7 +30,12 @@ public:
 
 	/** ICombat Interface*/
 	virtual int32 GetPlayerLevel() override;
+	virtual void Die(const FVector& DeathImpulse) override;
 	/** ICombat Interface*/
+
+	UPROPERTY(EditDefaultsOnly)
+	float DeathTime = 5.f;
+	FTimerHandle DeathTimerHandle;
 
 	/** IPlayer Interface*/
 	virtual void AddXP_Implementation(const int32 InXP) override;

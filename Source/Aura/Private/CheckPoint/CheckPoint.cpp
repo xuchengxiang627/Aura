@@ -22,6 +22,8 @@ ACheckPoint::ACheckPoint(const FObjectInitializer& ObjectInitializer) : Super(Ob
 	Sphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	Sphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
+	MoveToComponent = CreateDefaultSubobject<USceneComponent>(TEXT("MoveToComponent"));
+	MoveToComponent->SetupAttachment(RootComponent);
 }
 
 void ACheckPoint::LoadActor_Implementation()
@@ -35,7 +37,7 @@ void ACheckPoint::LoadActor_Implementation()
 void ACheckPoint::BeginPlay()
 {
 	Super::BeginPlay();
-	Sphere->OnComponentBeginOverlap.AddDynamic(this, &ACheckPoint::OnSphereOverlap);
+	if (bBindOverlapCallback) Sphere->OnComponentBeginOverlap.AddDynamic(this, &ACheckPoint::OnSphereOverlap);
 }
 
 void ACheckPoint::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -46,7 +48,9 @@ void ACheckPoint::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 		bReached = true;
 		if (AAuraGameModeBase* GameMode = GetWorld()->GetAuthGameMode<AAuraGameModeBase>())
 		{
-			GameMode->SaveWorldState(GetWorld());
+			FString WorldName = GetWorld()->GetMapName();
+			WorldName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+			GameMode->SaveWorldState(GetWorld(), WorldName);
 		}
 		IPlayerInterface::Execute_SaveProgress(OtherActor, PlayerStartTag);
 		HandleGlowEffects();
@@ -59,4 +63,20 @@ void ACheckPoint::HandleGlowEffects()
 	UMaterialInstanceDynamic* DynamicMaterialInstance = UMaterialInstanceDynamic::Create(CheckPointMesh->GetMaterial(0), this);
 	CheckPointMesh->SetMaterial(0, DynamicMaterialInstance);
 	CheckPointReached(DynamicMaterialInstance);
+}
+
+void ACheckPoint::HighlightActor_Implementation()
+{
+	CheckPointMesh->SetRenderCustomDepth(true);
+	CheckPointMesh->SetCustomDepthStencilValue(CustomDepthStencilOverride);
+}
+
+void ACheckPoint::UnHighlightActor_Implementation()
+{
+	CheckPointMesh->SetRenderCustomDepth(false);
+}
+
+void ACheckPoint::SetMoveToLocation_Implementation(FVector& OutDestination)
+{
+	OutDestination = MoveToComponent->GetComponentLocation();
 }

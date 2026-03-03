@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "AuraPlayerController.generated.h"
 
+class IHightLightInterface;
 class AMagicCircle;
 class UNiagaraSystem;
 class UDamageTextComponent;
@@ -17,6 +18,14 @@ struct FInputActionValue;
 class UInputMappingContext;
 class UInputAction;
 class IEnemyInterface;
+
+enum class ETargetingStatus
+{
+	TargetingEnemy,
+	TargetingNonEnemy,
+	NoTargeting
+};
+
 /**
  * 
  */
@@ -51,8 +60,8 @@ private:
 
 	void Move(const FInputActionValue& InputActionValue);
 	void CursorTrace(); // 检测鼠标追踪
-	IEnemyInterface* LastActor;
-	IEnemyInterface* ThisActor;
+	TObjectPtr<AActor> LastActor;
+	TObjectPtr<AActor> ThisActor;
 	FHitResult HitResult;
 
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -70,7 +79,8 @@ private:
 	float FollowTime = 0.f;
 	float ShortPressThreshold = 3.f;
 	bool bAutoRunning = false;
-	bool bTargeting = false;
+	// bool bTargeting = false;
+	ETargetingStatus TargetingStatus = ETargetingStatus::NoTargeting;
 	UPROPERTY(EditDefaultsOnly)
 	float AutoRunAcceptanceRadius = 50.f;
 	UPROPERTY(VisibleAnywhere)

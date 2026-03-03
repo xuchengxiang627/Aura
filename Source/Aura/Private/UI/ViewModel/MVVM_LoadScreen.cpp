@@ -38,11 +38,13 @@ UMVVM_LoadSlot* UMVVM_LoadScreen::GetLoadSlotViewModelByIndex(int32 Index)
 void UMVVM_LoadScreen::NewSlotButtonPressed(int32 Slot, FString& EnterName)
 {
 	AAuraGameModeBase* AuraGameModeBase = Cast<AAuraGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if (!IsValid(AuraGameModeBase)) return;
 	LoadSlots[Slot]->SetPlayerName(EnterName);
 	LoadSlots[Slot]->SetMapName(AuraGameModeBase->DefaultMapName);
 	LoadSlots[Slot]->SetPlayerLevel(1);
 	LoadSlots[Slot]->SlotStatus = ESaveSlotStatus::Taken;
 	LoadSlots[Slot]->PlayerStartTag = AuraGameModeBase->DefaultPlayerStartTag;
+	LoadSlots[Slot]->MapAssetName = AuraGameModeBase->DefaultMap.GetAssetName();
 	AuraGameModeBase->SaveSlotData(LoadSlots[Slot], Slot);
 	LoadSlots[Slot]->SetWidgetSwitcherIndex.Broadcast(2);
 
@@ -94,6 +96,7 @@ void UMVVM_LoadScreen::PlayButtonPressed()
 void UMVVM_LoadScreen::LoadData()
 {
 	AAuraGameModeBase* AuraGameModeBase = Cast<AAuraGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if (!IsValid(AuraGameModeBase)) return;
 	for (auto& [Index, LoadSlot]: LoadSlots)
 	{
 		if (UGameplayStatics::DoesSaveGameExist(LoadSlot->LoadSlotName, Index))

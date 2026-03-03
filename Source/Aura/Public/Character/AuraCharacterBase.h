@@ -88,6 +88,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Combat")
 	FName TailSocketName = FName("TailSocket");
 
+	UPROPERTY(BlueprintReadOnly)
 	bool bDead = false;
 
 	UPROPERTY()
